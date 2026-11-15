@@ -47,7 +47,11 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
         </p>
       </header>
       <main className="relative min-h-0 flex-1" aria-label="Repository graph">
-        <GraphCanvas graph={graph} />
+        <GraphCanvas
+          graph={graph}
+          clusters={data.clusters}
+          nodes={data.nodes}
+        />
       </main>
     </div>
   );

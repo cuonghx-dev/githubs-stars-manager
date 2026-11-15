@@ -50,3 +50,16 @@ export function edgeHighlightStyle(
   if (highlight.edges.has(key)) return { depth: "topEdges" };
   return { color: fade.edge };
 }
+
+/** The selected node always shows its label, on top, even when faded. */
+export function selectionStyle(
+  key: string,
+  selected: string | null,
+): Partial<NodeDisplayData> {
+  if (selected === null || key !== selected) return {};
+  return {
+    highlighted: true,
+    labelVisibility: "visible",
+    depth: "topNodes",
+  };
+}
