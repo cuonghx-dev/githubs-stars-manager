@@ -118,7 +118,7 @@ describe("runBuildGraph", () => {
       ["b/lib", "c/lib", false],
     ]);
     expect(lines.at(-1)).toMatch(
-      /^\[build-graph\] readmeMissingFile=1 nodes=4 candidates=2 edges=2 forced=1 mentions=1 isolated=1 kb=\d+ \(0ms\)$/,
+      /^\[build-graph\] readmeMissingFile=1 nodes=4 candidates=2 semanticPairs=0 edges=2 forced=1 mentions=1 isolated=1 clusters=\d+ unclustered=\d+ kb=\d+ \(0ms\)$/,
     );
   });
 

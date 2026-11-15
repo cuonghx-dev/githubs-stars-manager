@@ -279,7 +279,7 @@ describe("toRepoNode", () => {
 describe("degreeMetrics", () => {
   it("counts degree and sums weights; rejects unknown endpoints", () => {
     const m = degreeMetrics(
-      ["a", "b", "c"],
+      ["a", "b", "c", "d"],
       [
         { source: "a", target: "b", weight: 0.5 },
         { source: "a", target: "c", weight: 0.25 },
@@ -287,6 +287,8 @@ describe("degreeMetrics", () => {
     );
     expect(m.get("a")).toEqual({ degree: 2, weightedDegree: 0.75 });
     expect(m.get("b")).toEqual({ degree: 1, weightedDegree: 0.5 });
+    expect(m.get("c")).toEqual({ degree: 1, weightedDegree: 0.25 });
+    expect(m.get("d")).toEqual({ degree: 0, weightedDegree: 0 });
     expect(() =>
       degreeMetrics(["a"], [{ source: "a", target: "x", weight: 1 }]),
     ).toThrow(/not a node/);
