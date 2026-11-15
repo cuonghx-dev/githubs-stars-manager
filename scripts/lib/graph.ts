@@ -3,7 +3,7 @@
 // Raw repos + README text → nodes, candidate pairs → weighted edges → pruned
 // edges → `GraphFile`. Pure: the caller does all I/O.
 //
-// Signals: topic, owner, mention and, when embeddings are given, semantic
+// Signals: topic, owner, mention, dependency (FR-7) and, when embeddings are given, semantic
 // (dense cosine over all pairs, T2.2). Pruning streams candidates through a
 // per-node top-k heap, so memory stays O(n·k) even for all n² pairs. Clusters
 // come from seeded Louvain over the kept edges (FR-24, `lib/clusters.ts`);
@@ -61,6 +61,14 @@ export const M2_SIGNALS: readonly SignalName[] = [
   "mention",
   "owner",
 ];
+/** Signals available from M4: every signal, dependency included (FR-7). */
+export const M4_SIGNALS: readonly SignalName[] = [
+  "semantic",
+  "topic",
+  "mention",
+  "dependency",
+  "owner",
+];
 
 export interface BuildGraphOptions {
   weights: SignalWeights;
@@ -92,6 +100,11 @@ export interface BuildGraphInput {
    * enabled; pairs where either side has no vector get no semantic signal.
    */
   embeddings?: ReadonlyMap<string, ArrayLike<number>>;
+  /**
+   * Directed dependencies between starred repos by `nameWithOwner` (FR-7,
+   * `lib/deps.ts`). Used only when `dependency` is enabled.
+   */
+  dependencies?: ReadonlyMap<string, readonly string[]>;
   options: BuildGraphOptions;
 }
 
@@ -105,6 +118,7 @@ export interface BuildGraphStats {
   edges: number;
   forced: number;
   mentionEdges: number;
+  dependencyEdges: number;
   isolated: number;
   /** Real clusters (excluding "Unclustered"). */
   clusters: number;
@@ -204,7 +218,11 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
     ? detectMentions(repos, input.readmes)
     : new Map<string, string[]>();
 
-  const sparse = candidatePairs({ repos, mentions });
+  const dependencies = enabled.has("dependency")
+    ? (input.dependencies ?? new Map<string, string[]>())
+    : new Map<string, string[]>();
+
+  const sparse = candidatePairs({ repos, mentions, dependencies });
   const pruner = new TopKPruner<ScoredEdge>({
     k: options.k,
     minWeight: options.minWeight,
@@ -333,6 +351,7 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
       edges: edges.length,
       forced: kept.filter((e) => e.forced).length,
       mentionEdges: edges.filter((e) => e.signals.mention).length,
+      dependencyEdges: edges.filter((e) => e.signals.dependency).length,
       isolated: nodes.filter((n) => n.metrics.degree === 0).length,
       clusters: clusters.filter((c) => c.id !== UNCLUSTERED_ID).length,
       unclustered: nodes.filter((n) => n.cluster === UNCLUSTERED_ID).length,

@@ -2,8 +2,9 @@
 // (FR-6, FR-20-24, FR-27). I/O and wiring only; logic lives in
 // scripts/lib/graph.ts, stable output in scripts/lib/serialize.ts.
 //
-// Signals: semantic (from data/embeddings.json, `pnpm embed`), topic, owner
-// and mention, weights renormalised per FR-21. Without an embeddings file the
+// Signals: semantic (from data/embeddings.json, `pnpm embed`), topic, owner,
+// mention and dependency (from data/raw/deps.json, `pnpm sync`, FR-7), weights
+// renormalised per FR-21. Without a deps file the dependency signal is off. Without an embeddings file the
 // build falls back to the M1 signals with a warning. Seeded Louvain clusters
 // (FR-24) and seeded ForceAtlas2 layout. The output is schema-validated
 // and byte-identical across runs apart from `generatedAt` (NFR-4).
@@ -13,10 +14,11 @@ import { resolve } from "node:path";
 import config from "../config/graph.config.ts";
 import { readJsonOr, writeTextAtomic } from "./lib/fs-atomic.ts";
 import {
-  M2_SIGNALS,
-  buildGraph,
-  type BuildGraphOptions,
-} from "./lib/graph.ts";
+  DEPS_FILE_VERSION,
+  resolveDependencies,
+  type DepsFile,
+} from "./lib/deps.ts";
+import { M4_SIGNALS, buildGraph, type BuildGraphOptions } from "./lib/graph.ts";
 import { createLogger, type Logger } from "./lib/log.ts";
 import { readmePath } from "./lib/readmes.ts";
 import { normalizeGraph } from "./lib/serialize.ts";
@@ -25,7 +27,7 @@ import {
   filterPrivate,
   type StarsFile,
 } from "./lib/stars.ts";
-import { READMES_DIR, ROOT, STARS_PATH } from "./sync.ts";
+import { DEPS_PATH, READMES_DIR, ROOT, STARS_PATH } from "./sync.ts";
 import type { GraphFile } from "../src/lib/graph-schema.ts";
 import type { EmbeddingsFile } from "./embed.ts";
 
@@ -42,6 +44,8 @@ export interface BuildGraphDeps {
   graphPath: string;
   /** `data/embeddings.json`; absent/`null` disables the semantic signal. */
   embeddingsPath?: string | null;
+  /** `data/raw/deps.json`; absent/`null` disables the dependency signal. */
+  depsPath?: string | null;
   /** Only vectors from this model are used (FR-5); defaults to the config model. */
   modelId?: string;
   includePrivate: boolean;
@@ -115,12 +119,34 @@ export async function runBuildGraph(deps: BuildGraphDeps): Promise<GraphFile> {
     }
   }
 
+  let dependencies = new Map<string, string[]>();
+  if (options.enabledSignals.includes("dependency")) {
+    const file =
+      deps.depsPath == null
+        ? null
+        : await readJsonOr<DepsFile | null>(deps.depsPath, null);
+    if (file === null || file.version !== DEPS_FILE_VERSION) {
+      step.warn(
+        "no dependency cache found; run `pnpm sync` (dependency signal disabled)",
+      );
+      options = {
+        ...options,
+        enabledSignals: options.enabledSignals.filter(
+          (s) => s !== "dependency",
+        ),
+      };
+    } else {
+      dependencies = resolveDependencies(repos, file);
+    }
+  }
+
   const { graph, stats } = buildGraph({
     user: stars.user,
     generatedAt: deps.now().toISOString(),
     repos,
     readmes,
     embeddings,
+    dependencies,
     options,
   });
 
@@ -150,6 +176,7 @@ export async function runBuildGraph(deps: BuildGraphDeps): Promise<GraphFile> {
   step.set("edges", stats.edges);
   step.set("forced", stats.forced);
   step.set("mentions", stats.mentionEdges);
+  step.set("dependencies", stats.dependencyEdges);
   step.set("isolated", stats.isolated);
   step.set("clusters", stats.clusters);
   step.set("unclustered", stats.unclustered);
@@ -165,6 +192,7 @@ async function main(): Promise<void> {
     readmesDir: READMES_DIR,
     graphPath: GRAPH_PATH,
     embeddingsPath: EMBEDDINGS_PATH,
+    depsPath: DEPS_PATH,
     modelId: config.embedding.modelId,
     includePrivate: config.includePrivate,
     options: {
@@ -172,7 +200,7 @@ async function main(): Promise<void> {
       semanticRange: config.semanticRange,
       k: config.k,
       minWeight: config.minWeight,
-      enabledSignals: M2_SIGNALS,
+      enabledSignals: M4_SIGNALS,
       layout: config.layout,
       duplicateThreshold: config.duplicateThreshold,
       clustering: {

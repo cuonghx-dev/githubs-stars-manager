@@ -94,10 +94,15 @@ export interface CandidateInput {
    * `findMentions`). Unknown repo names and self-links are ignored.
    */
   mentions?: ReadonlyMap<string, readonly string[]>;
+  /**
+   * Directed dependencies: `key` depends on each repo in the value (from
+   * `resolveDependencies`, FR-7). Unknown repo names and self-edges are ignored.
+   */
+  dependencies?: ReadonlyMap<string, readonly string[]>;
 }
 
 /**
- * All pairs with a non-zero topic, mention or owner signal, sorted by
+ * All pairs with a non-zero topic, mention, dependency or owner signal, sorted by
  * `(source, target)`. Each pair carries only the signals that are present.
  */
 export function candidatePairs(input: CandidateInput): CandidatePair[] {
@@ -165,6 +170,15 @@ export function candidatePairs(input: CandidateInput): CandidatePair[] {
     for (const to of targets) {
       if (to === from || !names.has(to)) continue;
       get(from, to).signals.mention = true;
+    }
+  }
+
+  // Dependency: undirected, either side depends on the other.
+  for (const [from, targets] of input.dependencies ?? []) {
+    if (!names.has(from)) continue;
+    for (const to of targets) {
+      if (to === from || !names.has(to)) continue;
+      get(from, to).signals.dependency = true;
     }
   }
 
