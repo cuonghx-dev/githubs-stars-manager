@@ -32,6 +32,7 @@ import {
 import { clusterLabels } from "./tfidf.ts";
 import { computeLayout, type LayoutOptions } from "./layout.ts";
 import { MANUAL_MIN_WEIGHT, type ManualEdge } from "./manual.ts";
+import type { Enrichment } from "../../src/lib/graph-schema.ts";
 import { buildMentionIndex, findMentions } from "./mentions.ts";
 import { bridgeMetrics, degreeMetrics } from "./metrics.ts";
 import { TopKPruner } from "./prune.ts";
@@ -111,6 +112,8 @@ export interface BuildGraphInput {
   manualEdges?: readonly ManualEdge[];
   /** User tags by `nameWithOwner` from data/manual.yaml (FR-9). */
   tags?: ReadonlyMap<string, readonly string[]>;
+  /** Validated enrichment by `nameWithOwner` from data/enrichment.json (FR-8). */
+  enrichment?: ReadonlyMap<string, Enrichment>;
   options: BuildGraphOptions;
 }
 
@@ -167,6 +170,7 @@ export function toRepoNode(
   position: { x: number; y: number } = { x: 0, y: 0 },
   cluster: number = UNCLUSTERED_ID,
   tags: readonly string[] = [],
+  enrichment?: Enrichment,
 ): RepoNode {
   const slash = repo.nameWithOwner.indexOf("/");
   const readmeExcerpt =
@@ -207,6 +211,7 @@ export function toRepoNode(
         ? { bridgeScore: metrics.bridgeScore }
         : {}),
     },
+    ...(enrichment ? { enrichment } : {}),
   };
   return node;
 }
@@ -332,6 +337,7 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
       positions.get(repo.nameWithOwner),
       clustering.assignment.get(repo.nameWithOwner) ?? UNCLUSTERED_ID,
       input.tags?.get(repo.nameWithOwner),
+      input.enrichment?.get(repo.nameWithOwner),
     ),
   );
   const labels = clusterLabels(

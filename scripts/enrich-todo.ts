@@ -10,7 +10,7 @@
 import { access, readFile } from "node:fs/promises";
 import { relative, resolve } from "node:path";
 import config from "../config/graph.config.ts";
-import { MANUAL_PATH } from "./build-graph.ts";
+import { ENRICHMENT_PATH, MANUAL_PATH } from "./build-graph.ts";
 import { readJsonOr, writeJsonAtomic } from "./lib/fs-atomic.ts";
 import { createLogger, type Logger } from "./lib/log.ts";
 import { parseManual } from "./lib/manual.ts";
@@ -22,7 +22,7 @@ import {
 } from "./lib/stars.ts";
 import { READMES_DIR, ROOT, STARS_PATH } from "./sync.ts";
 
-export const ENRICHMENT_PATH = resolve(ROOT, "data/enrichment.json");
+export { ENRICHMENT_PATH };
 export const ENRICH_TODO_PATH = resolve(ROOT, "data/enrich-todo.json");
 export const ENRICH_TODO_VERSION = 1;
 

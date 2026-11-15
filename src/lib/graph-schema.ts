@@ -26,7 +26,7 @@ export const enrichmentCategorySchema = z.enum([
 ]);
 
 // PRD §5.3. Shared shape; the enrichment *file* schema (with reporting of
-// invalid entries) lives in scripts/lib/schemas.ts.
+// invalid entries) lives in scripts/lib/enrichment.ts.
 export const enrichmentSchema = z.object({
   summary: z.string(),
   category: enrichmentCategorySchema,
