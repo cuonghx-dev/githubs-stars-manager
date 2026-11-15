@@ -4,6 +4,13 @@ import { useEffect, useMemo, useRef } from "react";
 import type { SigmaOptions } from "sigma/types";
 import { ClusterLabels } from "@/features/graph/ClusterLabels";
 import {
+  computeFocus,
+  edgeFocusStyle,
+  nodeFocusStyle,
+  type Focus,
+  type FocusColors,
+} from "@/features/graph/focus";
+import {
   computeHighlight,
   edgeHighlightStyle,
   nodeHighlightStyle,
@@ -33,8 +40,12 @@ import type {
 // re-renders React. Node labels show once a node is large enough on screen
 // (sigma's label threshold, i.e. on zoom), on hover, and on selection; cluster
 // labels sit at centroids while zoomed out (FR-32).
+//
+// Focus mode (FR-34): the selected node and its 1-hop neighbours stay at full
+// colour, 2-hop nodes are dimmed and the rest fade; Esc clears the selection.
+// A hover highlight takes precedence over focus while the pointer is on a node.
 
-interface Palette extends FadeColors {
+interface Palette extends FadeColors, FocusColors {
   label: string;
   edgeColor: string;
 }
@@ -44,6 +55,7 @@ const LIGHT: Palette = {
   edgeColor: "rgba(115, 115, 115, 0.35)",
   node: "#e5e5e5",
   edge: "rgba(115, 115, 115, 0.08)",
+  dimEdge: "rgba(115, 115, 115, 0.18)",
 };
 
 const DARK: Palette = {
@@ -51,6 +63,7 @@ const DARK: Palette = {
   edgeColor: "rgba(163, 163, 163, 0.3)",
   node: "#3f3f46",
   edge: "rgba(163, 163, 163, 0.06)",
+  dimEdge: "rgba(163, 163, 163, 0.15)",
 };
 
 function currentPalette(): Palette {
@@ -63,6 +76,8 @@ type Options = Partial<SigmaOptions<NodeAttributes, EdgeAttributes>>;
 interface CanvasState {
   highlight: Highlight | null;
   selected: string | null;
+  /** 1-hop / 2-hop rings around the selected node. */
+  focus: Focus | null;
   /** Nodes that fail the filters; null when no filter is active. */
   filteredOut: ReadonlySet<string> | null;
   filterMode: FilterMode;
@@ -78,6 +93,7 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
   const stateRef = useRef<CanvasState>({
     highlight: null,
     selected: null,
+    focus: null,
     filteredOut: null,
     filterMode: "fade",
   });
@@ -89,9 +105,9 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
         hideEdgesOnMove: graph.size > 2000,
         labelRenderedSizeThreshold: 8,
       },
-      nodeReducer: (key) => {
+      nodeReducer: (key, data) => {
         const palette = paletteRef.current;
-        const { highlight, selected, filteredOut, filterMode } =
+        const { highlight, selected, focus, filteredOut, filterMode } =
           stateRef.current;
         if (filteredOut?.has(key) && key !== selected) {
           return filterMode === "hide"
@@ -100,24 +116,29 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
         }
         return {
           labelColor: palette.label,
-          ...nodeHighlightStyle(key, highlight, palette),
+          ...(highlight !== null
+            ? nodeHighlightStyle(key, highlight, palette)
+            : nodeFocusStyle(key, data.color, focus, palette)),
           ...selectionStyle(key, selected),
         };
       },
       edgeReducer: (key) => {
         const palette = paletteRef.current;
-        const { highlight, filteredOut, filterMode } = stateRef.current;
-        if (filteredOut !== null) {
-          const [source, target] = graph.extremities(key);
-          if (filteredOut.has(source) || filteredOut.has(target)) {
-            return filterMode === "hide"
-              ? { visibility: "hidden" }
-              : { color: palette.edge };
-          }
+        const { highlight, focus, filteredOut, filterMode } = stateRef.current;
+        if (filteredOut === null && highlight === null && focus === null) {
+          return { color: palette.edgeColor };
+        }
+        const [source, target] = graph.extremities(key);
+        if (filteredOut?.has(source) || filteredOut?.has(target)) {
+          return filterMode === "hide"
+            ? { visibility: "hidden" }
+            : { color: palette.edge };
         }
         return {
           color: palette.edgeColor,
-          ...edgeHighlightStyle(key, highlight, palette),
+          ...(highlight !== null
+            ? edgeHighlightStyle(key, highlight, palette)
+            : edgeFocusStyle(source, target, focus, palette)),
         };
       },
     }),
@@ -179,6 +200,18 @@ function GraphEvents({
     });
   }, [registerEvents]);
 
+  // Esc leaves focus mode (FR-34). Skip when another handler already used it
+  // (e.g. a dialog or sheet closing) so one press does one thing.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      const { selectedNode, select } = useAppStore.getState();
+      if (selectedNode !== null) select(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   // Store → refs → sigma.refresh(), without re-rendering React.
   useEffect(() => {
     const sync = (state: AppState, prev: AppState | null) => {
@@ -193,6 +226,7 @@ function GraphEvents({
           state.selectedNode !== null && graph.hasNode(state.selectedNode)
             ? state.selectedNode
             : null;
+        canvas.focus = computeFocus(graph, canvas.selected);
         dirty = true;
       }
       if (prev === null || state.filters !== prev.filters) {
