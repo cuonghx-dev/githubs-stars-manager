@@ -9,7 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "data": "pnpm sync && pnpm embed && pnpm build-graph",
+    "data": "pnpm sync && pnpm build-graph",
     "sync": "tsx scripts/sync.ts",
     "embed": "tsx scripts/embed.ts",
     "build-graph": "tsx scripts/build-graph.ts",
