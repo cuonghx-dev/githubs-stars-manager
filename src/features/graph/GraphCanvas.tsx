@@ -70,6 +70,9 @@ function currentPalette(): Palette {
   return document.documentElement.classList.contains("dark") ? DARK : LIGHT;
 }
 
+/** Camera ratio used when centring a node from search (smaller = closer). */
+const CENTER_ZOOM_RATIO = 0.35;
+
 type Options = Partial<SigmaOptions<NodeAttributes, EdgeAttributes>>;
 
 /** Mirror of the store slices the reducers read; mutated, never rendered. */
@@ -239,6 +242,28 @@ function GraphEvents({
     sync(useAppStore.getState(), null);
     return useAppStore.subscribe(sync);
   }, [sigma, graph, nodes, stateRef]);
+
+  // Search picks (T3.6) ask to centre a node: animate the camera there and
+  // zoom in, but never zoom out if the user is already closer.
+  useEffect(
+    () =>
+      useAppStore.subscribe((state, prev) => {
+        const request = state.centerRequest;
+        if (request === null || request === prev.centerRequest) return;
+        const display = sigma.getNodeDisplayData(request.node);
+        if (!display) return;
+        const camera = sigma.getCamera();
+        void camera.animate(
+          {
+            x: display.x,
+            y: display.y,
+            ratio: Math.min(camera.ratio, CENTER_ZOOM_RATIO),
+          },
+          { duration: 600 },
+        );
+      }),
+    [sigma],
+  );
 
   // Follow the `dark` class on <html> (set from the system scheme, NFR-8).
   useEffect(() => {

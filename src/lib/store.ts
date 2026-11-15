@@ -52,6 +52,11 @@ export interface AppState {
   theme: ThemePreference;
   /** Nodes visited by selection, oldest first; the last one is current. */
   walkHistory: readonly string[];
+  /**
+   * Latest "move the camera to this node" request (search, T3.6). `seq`
+   * changes on every request so picking the same node twice re-centres.
+   */
+  centerRequest: { node: string; seq: number } | null;
 
   /** Select a node (or clear with null); a new node is pushed to the walk. */
   select: (node: string | null) => void;
@@ -65,6 +70,8 @@ export interface AppState {
   /** Step back in the walk history and select the previous node. */
   walkBack: () => void;
   clearWalk: () => void;
+  /** Ask the canvas to animate the camera to a node. */
+  centerOn: (node: string) => void;
 }
 
 export const useAppStore = create<AppState>()((set, get) => ({
@@ -74,6 +81,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   view: "graph",
   theme: "system",
   walkHistory: [],
+  centerRequest: null,
 
   select: (node) => {
     if (node === get().selectedNode) return;
@@ -104,6 +112,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
       return { walkHistory, selectedNode: walkHistory.at(-1) ?? null };
     }),
   clearWalk: () => set({ walkHistory: [] }),
+  centerOn: (node) =>
+    set((s) => ({
+      centerRequest: { node, seq: (s.centerRequest?.seq ?? 0) + 1 },
+    })),
 }));
 
 function pushWalk(history: readonly string[], node: string): string[] {

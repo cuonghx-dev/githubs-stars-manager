@@ -38,6 +38,9 @@ importers:
       lucide-react:
         specifier: ^1.73.0
         version: 1.73.0(@types/react@19.3.0)(react@19.3.1)
+      minisearch:
+        specifier: ^7.2.0
+        version: 7.2.0
       p-limit:
         specifier: ^7.3.3
         version: 7.3.3
@@ -2599,6 +2602,9 @@ packages:
 
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
+
+  minisearch@7.2.0:
+    resolution: {integrity: sha512-dqT2XBYUOZOiC5t2HRnwADjhNS2cecp9u+TJRiJ1Qp/f5qjkeT5APcGPjHw+bz89Ms8Jp+cG4AlE+QZ/QnDglg==}
 
   mnemonist@0.39.8:
     resolution: {integrity: sha512-vyWo2K3fjrUw8YeeZ1zF0fy6Mu59RHokURlld8ymdUPjMlD9EC9ov1/YPqTgqRvUN9nTr3Gqfz29LYAmu0PHPQ==}
@@ -5683,6 +5689,8 @@ snapshots:
       brace-expansion: 5.0.13
 
   minimist@1.2.8: {}
+
+  minisearch@7.2.0: {}
 
   mnemonist@0.39.8:
     dependencies:

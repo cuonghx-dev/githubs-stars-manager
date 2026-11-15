@@ -31,8 +31,9 @@ import { cn } from "@/lib/utils";
 // App shell from PRD §6 (T3.1): header (search, filters, theme, freshness),
 // left views nav, sigma canvas, repo detail panel, timeline bar. Below the
 // `lg` breakpoint the nav collapses into a menu sheet and the detail panel
-// becomes a bottom sheet. Search, filters, theme, views other than Graph,
-// and the timeline are placeholders wired up by later M3/M4 tasks.
+// becomes a bottom sheet. Search comes in through the `search` slot; filters,
+// theme, views other than Graph, and the timeline are placeholders wired up by
+// later M3/M4 tasks.
 
 export type { ViewId };
 
@@ -59,6 +60,8 @@ interface AppShellProps {
   /** Header freshness line, e.g. "Generated 3 days ago · 812 repos" (FR-37). */
   freshness: string;
   freshnessTitle?: string;
+  /** Header search box (T3.6); a disabled placeholder when omitted. */
+  search?: ReactNode;
   /** The sigma canvas. */
   children: ReactNode;
   /** Detail panel body; null shows the empty hint. */
@@ -71,6 +74,7 @@ interface AppShellProps {
 export function AppShell({
   freshness,
   freshnessTitle,
+  search,
   children,
   detail = null,
   detailOpen: detailOpenProp,
@@ -103,7 +107,9 @@ export function AppShell({
           </Button>
         )}
         <h1 className="shrink-0 text-base font-semibold">Stars Graph</h1>
-        <SearchBox className="ml-2 max-w-sm min-w-0 flex-1" />
+        <div className="ml-2 max-w-sm min-w-0 flex-1">
+          {search ?? <SearchPlaceholder />}
+        </div>
         {wide && <FilterBar />}
         <div className="ml-auto flex items-center gap-2">
           {wide && (
@@ -201,9 +207,9 @@ export function AppShell({
   );
 }
 
-function SearchBox({ className }: { className?: string }) {
+function SearchPlaceholder() {
   return (
-    <div className={cn("relative", className)}>
+    <div className="relative">
       <Search
         className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
         aria-hidden="true"

@@ -4,6 +4,7 @@ import { AppShell } from "@/app/AppShell";
 import { DetailPanel } from "@/features/detail/DetailPanel";
 import { buildSimilarIndex } from "@/features/detail/reasons";
 import { GraphCanvas } from "@/features/graph/GraphCanvas";
+import { SearchBox } from "@/features/search/SearchBox";
 import { formatFreshness } from "@/lib/format";
 import {
   loadGraph,
@@ -69,6 +70,7 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
     <AppShell
       freshness={formatFreshness(data.generatedAt, data.nodes.length)}
       freshnessTitle={data.generatedAt}
+      search={<SearchBox nodes={data.nodes} />}
       detail={
         repo ? (
           <DetailPanel
