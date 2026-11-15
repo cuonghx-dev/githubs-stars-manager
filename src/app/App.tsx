@@ -1,5 +1,6 @@
 import { LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
+import { AppShell } from "@/app/AppShell";
 import { GraphCanvas } from "@/features/graph/GraphCanvas";
 import { formatFreshness } from "@/lib/format";
 import {
@@ -8,8 +9,8 @@ import {
   type LoadGraphResult,
 } from "@/lib/load-graph";
 
-// App shell for M1 (T1.8): loading → graph, or the empty/error state when
-// graph.json is missing or invalid (FR-37, PRD §6 states).
+// App entry: loading → graph inside the PRD §6 shell (T3.1), or the
+// empty/error state when graph.json is missing or invalid (FR-37, PRD §6 states).
 
 type State = { status: "loading" } | LoadGraphResult;
 
@@ -39,21 +40,12 @@ export function App() {
 function GraphView({ loaded }: { loaded: LoadedGraph }) {
   const { data, graph } = loaded;
   return (
-    <div className="flex h-svh flex-col bg-background text-foreground">
-      <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b px-4 py-2">
-        <h1 className="text-base font-semibold">Stars Graph</h1>
-        <p className="text-sm text-muted-foreground" title={data.generatedAt}>
-          {formatFreshness(data.generatedAt, data.nodes.length)}
-        </p>
-      </header>
-      <main className="relative min-h-0 flex-1" aria-label="Repository graph">
-        <GraphCanvas
-          graph={graph}
-          clusters={data.clusters}
-          nodes={data.nodes}
-        />
-      </main>
-    </div>
+    <AppShell
+      freshness={formatFreshness(data.generatedAt, data.nodes.length)}
+      freshnessTitle={data.generatedAt}
+    >
+      <GraphCanvas graph={graph} clusters={data.clusters} nodes={data.nodes} />
+    </AppShell>
   );
 }
 
