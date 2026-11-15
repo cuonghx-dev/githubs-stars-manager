@@ -26,14 +26,13 @@ import {
 } from "@/components/ui/sheet";
 import { useMediaQuery, WIDE_QUERY } from "@/hooks/use-media-query";
 import { useAppStore, type ViewId } from "@/lib/store";
-import { cn } from "@/lib/utils";
 
 // App shell from PRD §6 (T3.1): header (search, filters, theme, freshness),
 // left views nav, sigma canvas, repo detail panel, timeline bar. Below the
 // `lg` breakpoint the nav collapses into a menu sheet and the detail panel
 // becomes a bottom sheet. Search comes in through the `search` slot; filters,
 // theme, views other than Graph, and the timeline are placeholders wired up by
-// later M3/M4 tasks.
+// later M3/M4 tasks. Filters come in through the `filters` slot (T3.7).
 
 export type { ViewId };
 
@@ -54,7 +53,7 @@ const VIEWS: readonly ViewItem[] = [
   { id: "path", label: "Path", icon: Route, available: false },
 ];
 
-const FILTERS = ["Language", "Cluster", "Archived"] as const;
+const FILTERS = ["Language", "Cluster", "Archived", "Starred"] as const;
 
 interface AppShellProps {
   /** Header freshness line, e.g. "Generated 3 days ago · 812 repos" (FR-37). */
@@ -62,6 +61,11 @@ interface AppShellProps {
   freshnessTitle?: string;
   /** Header search box (T3.6); a disabled placeholder when omitted. */
   search?: ReactNode;
+  /**
+   * Filter controls (T3.7); rendered in the header on wide screens and in the
+   * menu sheet on narrow ones. A disabled placeholder when omitted.
+   */
+  filters?: ReactNode;
   /** The sigma canvas. */
   children: ReactNode;
   /** Detail panel body; null shows the empty hint. */
@@ -75,6 +79,7 @@ export function AppShell({
   freshness,
   freshnessTitle,
   search,
+  filters,
   children,
   detail = null,
   detailOpen: detailOpenProp,
@@ -110,7 +115,7 @@ export function AppShell({
         <div className="ml-2 max-w-sm min-w-0 flex-1">
           {search ?? <SearchPlaceholder />}
         </div>
-        {wide && <FilterBar />}
+        {wide && (filters ?? <FilterPlaceholder />)}
         <div className="ml-auto flex items-center gap-2">
           {wide && (
             <p
@@ -183,7 +188,9 @@ export function AppShell({
                 <p className="mb-2 text-xs font-medium text-muted-foreground">
                   Filters
                 </p>
-                <FilterBar className="flex-wrap" />
+                <div className="[&>div]:flex-wrap">
+                  {filters ?? <FilterPlaceholder />}
+                </div>
               </div>
             </SheetContent>
           </Sheet>
@@ -225,9 +232,9 @@ function SearchPlaceholder() {
   );
 }
 
-function FilterBar({ className }: { className?: string }) {
+function FilterPlaceholder() {
   return (
-    <div className={cn("flex items-center gap-1.5", className)}>
+    <div className="flex items-center gap-1.5">
       {FILTERS.map((label) => (
         <Button
           key={label}

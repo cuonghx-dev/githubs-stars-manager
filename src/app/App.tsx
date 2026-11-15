@@ -2,6 +2,7 @@ import { LoaderCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/app/AppShell";
 import { DetailPanel } from "@/features/detail/DetailPanel";
+import { FilterBar, NoResults } from "@/features/filters/FilterBar";
 import { buildSimilarIndex } from "@/features/detail/reasons";
 import { GraphCanvas } from "@/features/graph/GraphCanvas";
 import { SearchBox } from "@/features/search/SearchBox";
@@ -11,7 +12,7 @@ import {
   type LoadedGraph,
   type LoadGraphResult,
 } from "@/lib/load-graph";
-import { useAppStore } from "@/lib/store";
+import { filtersActive, matchesFilters, useAppStore } from "@/lib/store";
 
 // App entry: loading → graph inside the PRD §6 shell (T3.1), or the
 // empty/error state when graph.json is missing or invalid (FR-37, PRD §6 states).
@@ -52,6 +53,14 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
     [data.nodes, data.edges],
   );
   const selectedNode = useAppStore((s) => s.selectedNode);
+  const filters = useAppStore((s) => s.filters);
+  const matchCount = useMemo(
+    () =>
+      filtersActive(filters)
+        ? data.nodes.filter((n) => matchesFilters(n, filters)).length
+        : data.nodes.length,
+    [data.nodes, filters],
+  );
   const repo = selectedNode === null ? undefined : repoById.get(selectedNode);
 
   // Narrow screens: selecting a node opens the detail bottom sheet (FR-34).
@@ -71,6 +80,7 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
       freshness={formatFreshness(data.generatedAt, data.nodes.length)}
       freshnessTitle={data.generatedAt}
       search={<SearchBox nodes={data.nodes} />}
+      filters={<FilterBar nodes={data.nodes} clusters={data.clusters} />}
       detail={
         repo ? (
           <DetailPanel
@@ -85,6 +95,7 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
       onDetailOpenChange={setDetailOpen}
     >
       <GraphCanvas graph={graph} clusters={data.clusters} nodes={data.nodes} />
+      <NoResults matchCount={matchCount} />
     </AppShell>
   );
 }
