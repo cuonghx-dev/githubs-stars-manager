@@ -1,6 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/app/AppShell";
+import { BridgesView } from "@/features/bridges/BridgesView";
 import { ClusterOverview } from "@/features/clusters/ClusterOverview";
 import { DetailPanel } from "@/features/detail/DetailPanel";
 import { FilterBar, NoResults } from "@/features/filters/FilterBar";
@@ -109,6 +110,13 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
       <NoResults matchCount={matchCount} />
       {view === "clusters" && (
         <ClusterOverview clusters={data.clusters} nodes={data.nodes} />
+      )}
+      {view === "bridges" && (
+        <BridgesView
+          clusters={data.clusters}
+          nodes={data.nodes}
+          edges={data.edges}
+        />
       )}
       <ShortcutDialog />
     </AppShell>

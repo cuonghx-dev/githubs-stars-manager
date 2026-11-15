@@ -37,7 +37,8 @@ import { nextThemePreference } from "@/lib/theme";
 // becomes a bottom sheet. Search comes in through the `search` slot; filters,
 // views other than Graph, and the timeline are placeholders wired up by
 // later M3/M4 tasks. Filters come in through the `filters` slot (T3.7). The
-// Clusters view (T3.8) is rendered by App over the canvas.
+// Clusters (T3.8) and Bridges (T4.5) views are rendered by App over the
+// canvas.
 
 export type { ViewId };
 
@@ -52,7 +53,7 @@ interface ViewItem {
 const VIEWS: readonly ViewItem[] = [
   { id: "graph", label: "Graph", icon: Network, available: true },
   { id: "clusters", label: "Clusters", icon: Shapes, available: true },
-  { id: "bridges", label: "Bridges", icon: Waypoints, available: false },
+  { id: "bridges", label: "Bridges", icon: Waypoints, available: true },
   { id: "forgotten", label: "Forgotten", icon: Clock, available: false },
   { id: "dupes", label: "Dupes", icon: Copy, available: false },
   { id: "path", label: "Path", icon: Route, available: false },
