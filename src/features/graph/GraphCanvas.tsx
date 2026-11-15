@@ -19,6 +19,12 @@ import {
   type Highlight,
 } from "@/features/graph/highlight";
 import {
+  computePathHighlight,
+  edgePathStyle,
+  nodePathStyle,
+  type PathHighlight,
+} from "@/features/graph/path";
+import {
   archivedNodeStyle,
   edgeKindStyle,
   GRAPH_PRIMITIVES,
@@ -107,6 +113,8 @@ interface CanvasState {
   selected: string | null;
   /** 1-hop / 2-hop rings around the selected node. */
   focus: Focus | null;
+  /** Path finder route (T4.6); only while the Path view is open. */
+  path: PathHighlight | null;
   /** Nodes that fail the filters; null when no filter is active. */
   filteredOut: ReadonlySet<string> | null;
   filterMode: FilterMode;
@@ -123,6 +131,7 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
     highlight: null,
     selected: null,
     focus: null,
+    path: null,
     filteredOut: null,
     filterMode: "fade",
   });
@@ -137,10 +146,14 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
       },
       nodeReducer: (key, data, attrs) => {
         const palette = paletteRef.current;
-        const { highlight, selected, focus, filteredOut, filterMode } =
+        const { highlight, selected, focus, path, filteredOut, filterMode } =
           stateRef.current;
         const hollow = archivedNodeStyle(attrs.archived, palette);
-        if (filteredOut?.has(key) && key !== selected) {
+        if (
+          filteredOut?.has(key) &&
+          key !== selected &&
+          !path?.nodes.has(key)
+        ) {
           return filterMode === "hide"
             ? { visibility: "hidden" }
             : { ...hollow, color: palette.node, labelVisibility: "hidden" };
@@ -150,19 +163,30 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
           labelColor: palette.label,
           ...(highlight !== null
             ? nodeHighlightStyle(key, highlight, palette)
-            : nodeFocusStyle(key, data.color, focus, palette)),
+            : path !== null
+              ? nodePathStyle(key, path, palette)
+              : nodeFocusStyle(key, data.color, focus, palette)),
           ...selectionStyle(key, selected),
         };
       },
       edgeReducer: (key, _data, attrs) => {
         const palette = paletteRef.current;
-        const { highlight, focus, filteredOut, filterMode } = stateRef.current;
+        const { highlight, focus, path, filteredOut, filterMode } =
+          stateRef.current;
         const base = edgeKindStyle(attrs.kind, palette);
-        if (filteredOut === null && highlight === null && focus === null) {
+        if (
+          filteredOut === null &&
+          highlight === null &&
+          focus === null &&
+          path === null
+        ) {
           return base;
         }
         const [source, target] = graph.extremities(key);
-        if (filteredOut?.has(source) || filteredOut?.has(target)) {
+        if (
+          !path?.edges.has(key) &&
+          (filteredOut?.has(source) || filteredOut?.has(target))
+        ) {
           return filterMode === "hide"
             ? { visibility: "hidden" }
             : { ...base, color: palette.edge };
@@ -171,7 +195,9 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
           ...base,
           ...(highlight !== null
             ? edgeHighlightStyle(key, highlight, palette)
-            : edgeFocusStyle(source, target, focus, palette)),
+            : path !== null
+              ? edgePathStyle(key, path, palette)
+              : edgeFocusStyle(source, target, focus, palette)),
         };
       },
     }),
@@ -248,6 +274,17 @@ function GraphEvents({
             ? state.selectedNode
             : null;
         canvas.focus = computeFocus(graph, canvas.selected);
+        dirty = true;
+      }
+      if (
+        prev === null ||
+        state.view !== prev.view ||
+        state.pathNodes !== prev.pathNodes
+      ) {
+        canvas.path = computePathHighlight(
+          graph,
+          state.view === "path" ? state.pathNodes : null,
+        );
         dirty = true;
       }
       if (prev === null || state.filters !== prev.filters) {

@@ -8,7 +8,8 @@ import { readThemePreference, writeThemePreference } from "@/lib/theme";
 //
 // Scope: selection, hover, filters, active view, theme preference and the
 // "random walk" history. Later M3 tasks fill in behaviour on top of this:
-// focus mode (T3.3), filters UI (T3.7), cluster view (T3.8), theme (T3.9).
+// focus mode (T3.3), filters UI (T3.7), cluster view (T3.8), theme (T3.9),
+// path finder (T4.6).
 
 export type ViewId =
   "graph" | "clusters" | "bridges" | "forgotten" | "dupes" | "path";
@@ -69,6 +70,14 @@ export interface AppState {
   focusSearchSeq: number;
   /** Whether the keyboard shortcut dialog is open (`?`, T3.10). */
   shortcutsOpen: boolean;
+  /** Path finder ends (T4.6); kept while switching views. */
+  pathFrom: string | null;
+  pathTo: string | null;
+  /**
+   * Node ids of the current path, ends included; null when there is none.
+   * The canvas highlights it only while the Path view is open.
+   */
+  pathNodes: readonly string[] | null;
 
   /** Select a node (or clear with null); a new node is pushed to the walk. */
   select: (node: string | null) => void;
@@ -91,6 +100,8 @@ export interface AppState {
   /** Ask the search box to take focus. */
   focusSearch: () => void;
   setShortcutsOpen: (open: boolean) => void;
+  setPathEnds: (patch: { from?: string | null; to?: string | null }) => void;
+  setPathNodes: (nodes: readonly string[] | null) => void;
 }
 
 export const useAppStore = create<AppState>()((set, get) => ({
@@ -105,6 +116,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
   fitGraphSeq: 0,
   focusSearchSeq: 0,
   shortcutsOpen: false,
+  pathFrom: null,
+  pathTo: null,
+  pathNodes: null,
 
   select: (node) => {
     if (node === get().selectedNode) return;
@@ -149,6 +163,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
   fitGraph: () => set((s) => ({ fitGraphSeq: s.fitGraphSeq + 1 })),
   focusSearch: () => set((s) => ({ focusSearchSeq: s.focusSearchSeq + 1 })),
   setShortcutsOpen: (shortcutsOpen) => set({ shortcutsOpen }),
+  setPathEnds: ({ from, to }) =>
+    set((s) => ({
+      pathFrom: from === undefined ? s.pathFrom : from,
+      pathTo: to === undefined ? s.pathTo : to,
+    })),
+  setPathNodes: (pathNodes) => set({ pathNodes }),
 }));
 
 function pushWalk(history: readonly string[], node: string): string[] {

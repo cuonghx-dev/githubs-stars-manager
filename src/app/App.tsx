@@ -7,6 +7,7 @@ import { DetailPanel } from "@/features/detail/DetailPanel";
 import { FilterBar, NoResults } from "@/features/filters/FilterBar";
 import { buildSimilarIndex } from "@/features/detail/reasons";
 import { GraphCanvas } from "@/features/graph/GraphCanvas";
+import { PathView } from "@/features/path/PathView";
 import { SearchBox } from "@/features/search/SearchBox";
 import { ShortcutDialog } from "@/features/shortcuts/ShortcutDialog";
 import { useKeyboardShortcuts } from "@/features/shortcuts/useKeyboardShortcuts";
@@ -117,6 +118,9 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
           nodes={data.nodes}
           edges={data.edges}
         />
+      )}
+      {view === "path" && (
+        <PathView graph={graph} nodes={data.nodes} edges={data.edges} />
       )}
       <ShortcutDialog />
     </AppShell>
