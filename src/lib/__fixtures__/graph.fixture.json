@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-15T12:00:00.000Z",
+  "user": "octocat",
+  "clusters": [
+    { "id": 0, "label": "react · ui · hooks", "color": "#4f7cff", "size": 2 },
+    { "id": -1, "label": "Unclustered", "color": "#9ca3af", "size": 1 }
+  ],
+  "nodes": [
+    {
+      "id": "facebook/react",
+      "githubId": "MDEwOlJlcG9zaXRvcnkxMDI3MDI1MA==",
+      "name": "react",
+      "owner": "facebook",
+      "url": "https://github.com/facebook/react",
+      "homepage": "https://react.dev",
+      "description": "The library for web and native user interfaces.",
+      "readmeExcerpt": "React is a JavaScript library for building user interfaces.",
+      "language": "JavaScript",
+      "languages": ["JavaScript", "TypeScript", "HTML"],
+      "topics": ["react", "ui", "frontend"],
+      "tags": ["daily-driver"],
+      "stars": 230000,
+      "forks": 47000,
+      "license": "MIT",
+      "isArchived": false,
+      "isFork": false,
+      "pushedAt": "2026-11-14T09:30:00Z",
+      "createdAt": "2013-05-24T16:15:54Z",
+      "starredAt": "2020-01-02T03:04:05Z",
+      "cluster": 0,
+      "x": 12.5,
+      "y": -3.25,
+      "metrics": {
+        "degree": 1,
+        "weightedDegree": 0.8123,
+        "betweenness": 0,
+        "bridgeScore": 0
+      },
+      "enrichment": {
+        "summary": "Component-based UI library.",
+        "category": "library",
+        "concepts": ["ui", "virtual-dom"],
+        "alternativesTo": ["preactjs/preact"],
+        "enrichedAt": "2026-11-10T00:00:00Z"
+      }
+    },
+    {
+      "id": "preactjs/preact",
+      "githubId": "MDEwOlJlcG9zaXRvcnkzNDUyNjg4NA==",
+      "name": "preact",
+      "owner": "preactjs",
+      "url": "https://github.com/preactjs/preact",
+      "languages": ["JavaScript"],
+      "topics": ["react", "ui"],
+      "stars": 37000,
+      "forks": 1900,
+      "isArchived": false,
+      "isFork": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2015-09-11T02:40:18Z",
+      "starredAt": "2021-06-07T08:09:10Z",
+      "cluster": 0,
+      "x": 10,
+      "y": -1.5,
+      "metrics": { "degree": 1, "weightedDegree": 0.8123 }
+    },
+    {
+      "id": "someone/old-experiment",
+      "githubId": "R_kgDOAbCdEf",
+      "name": "old-experiment",
+      "owner": "someone",
+      "url": "https://github.com/someone/old-experiment",
+      "languages": [],
+      "topics": [],
+      "stars": 3,
+      "forks": 0,
+      "isArchived": true,
+      "isFork": true,
+      "pushedAt": "2019-03-03T03:03:03Z",
+      "createdAt": "2019-01-01T00:00:00Z",
+      "starredAt": "2019-03-04T00:00:00Z",
+      "cluster": -1,
+      "x": 100,
+      "y": 0,
+      "metrics": { "degree": 0, "weightedDegree": 0 }
+    }
+  ],
+  "edges": [
+    {
+      "source": "facebook/react",
+      "target": "preactjs/preact",
+      "weight": 0.8123,
+      "signals": {
+        "semantic": 0.9012,
+        "topic": 0.6667,
+        "sharedTopics": ["react", "ui"],
+        "mention": true,
+        "dependency": false,
+        "owner": false,
+        "manual": "alternative-of"
+      }
+    }
+  ],
+  "duplicates": [["facebook/react", "preactjs/preact", 0.9012]],
+  "concepts": [
+    {
+      "id": "concept:virtual-dom",
+      "label": "virtual-dom",
+      "repos": ["facebook/react"]
+    }
+  ]
+}
