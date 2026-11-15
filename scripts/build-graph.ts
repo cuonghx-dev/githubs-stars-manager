@@ -2,15 +2,21 @@
 // (FR-6, FR-20-23, FR-27). I/O and wiring only; logic lives in
 // scripts/lib/graph.ts, stable output in scripts/lib/serialize.ts.
 //
-// M1: topic, owner and mention signals (weights renormalised per FR-21); all
-// nodes unclustered; seeded ForceAtlas2 layout. The output is schema-validated
+// Signals: semantic (from data/embeddings.json, `pnpm embed`), topic, owner
+// and mention, weights renormalised per FR-21. Without an embeddings file the
+// build falls back to the M1 signals with a warning. All nodes unclustered
+// until T2.3; seeded ForceAtlas2 layout. The output is schema-validated
 // and byte-identical across runs apart from `generatedAt` (NFR-4).
 
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import config from "../config/graph.config.ts";
 import { readJsonOr, writeTextAtomic } from "./lib/fs-atomic.ts";
-import { M1_SIGNALS, buildGraph, type BuildGraphOptions } from "./lib/graph.ts";
+import {
+  M2_SIGNALS,
+  buildGraph,
+  type BuildGraphOptions,
+} from "./lib/graph.ts";
 import { createLogger, type Logger } from "./lib/log.ts";
 import { readmePath } from "./lib/readmes.ts";
 import { normalizeGraph } from "./lib/serialize.ts";
@@ -21,8 +27,11 @@ import {
 } from "./lib/stars.ts";
 import { READMES_DIR, ROOT, STARS_PATH } from "./sync.ts";
 import type { GraphFile } from "../src/lib/graph-schema.ts";
+import type { EmbeddingsFile } from "./embed.ts";
 
 export const GRAPH_PATH = resolve(ROOT, "public/graph.json");
+/** Same path as `EMBEDDINGS_PATH` in embed.ts (not imported: it loads the model runtime). */
+export const EMBEDDINGS_PATH = resolve(ROOT, "data/embeddings.json");
 /** NFR-2 payload budget. */
 export const GRAPH_SIZE_BUDGET = 3 * 1024 * 1024;
 
@@ -31,6 +40,10 @@ export interface BuildGraphDeps {
   starsPath: string;
   readmesDir: string;
   graphPath: string;
+  /** `data/embeddings.json`; absent/`null` disables the semantic signal. */
+  embeddingsPath?: string | null;
+  /** Only vectors from this model are used (FR-5); defaults to the config model. */
+  modelId?: string;
   includePrivate: boolean;
   options: BuildGraphOptions;
   now: () => Date;
@@ -68,19 +81,54 @@ export async function runBuildGraph(deps: BuildGraphDeps): Promise<GraphFile> {
       }),
   );
 
+  // Embeddings are keyed by githubId (stable across renames, FR-4).
+  const embeddings = new Map<string, number[]>();
+  const modelId = deps.modelId ?? config.embedding.modelId;
+  let options = deps.options;
+  if (options.enabledSignals.includes("semantic")) {
+    const file =
+      deps.embeddingsPath == null
+        ? null
+        : await readJsonOr<EmbeddingsFile | null>(deps.embeddingsPath, null);
+    if (file === null) {
+      step.warn(
+        "no embeddings found; run `pnpm embed` (semantic signal disabled)",
+      );
+      options = {
+        ...options,
+        enabledSignals: options.enabledSignals.filter((s) => s !== "semantic"),
+      };
+    } else {
+      for (const repo of repos) {
+        const entry = file[repo.githubId];
+        if (entry?.model === modelId && entry.vector.length > 0) {
+          embeddings.set(repo.nameWithOwner, entry.vector);
+        } else {
+          step.count("missingVectors");
+        }
+      }
+      if (embeddings.size < repos.length) {
+        step.warn(
+          `${repos.length - embeddings.size} repos have no ${modelId} vector; run \`pnpm embed\``,
+        );
+      }
+    }
+  }
+
   const { graph, stats } = buildGraph({
     user: stars.user,
     generatedAt: deps.now().toISOString(),
     repos,
     readmes,
-    options: deps.options,
+    embeddings,
+    options,
   });
 
   // Budget check (plan §4): pruning keeps at most k non-forced edges per node.
   const nonForced = stats.edges - stats.forced;
-  if (nonForced > deps.options.k * stats.nodes) {
+  if (nonForced > options.k * stats.nodes) {
     throw new Error(
-      `non-forced edges ${nonForced} exceed k × nodes = ${deps.options.k * stats.nodes}`,
+      `non-forced edges ${nonForced} exceed k × nodes = ${options.k * stats.nodes}`,
     );
   }
 
@@ -97,6 +145,7 @@ export async function runBuildGraph(deps: BuildGraphDeps): Promise<GraphFile> {
 
   step.set("nodes", stats.nodes);
   step.set("candidates", stats.candidates);
+  step.set("semanticPairs", stats.semanticPairs);
   step.set("edges", stats.edges);
   step.set("forced", stats.forced);
   step.set("mentions", stats.mentionEdges);
@@ -112,13 +161,15 @@ async function main(): Promise<void> {
     starsPath: STARS_PATH,
     readmesDir: READMES_DIR,
     graphPath: GRAPH_PATH,
+    embeddingsPath: EMBEDDINGS_PATH,
+    modelId: config.embedding.modelId,
     includePrivate: config.includePrivate,
     options: {
       weights: config.weights,
       semanticRange: config.semanticRange,
       k: config.k,
       minWeight: config.minWeight,
-      enabledSignals: M1_SIGNALS,
+      enabledSignals: M2_SIGNALS,
       layout: config.layout,
     },
     now: () => new Date(),

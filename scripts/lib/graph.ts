@@ -3,8 +3,10 @@
 // Raw repos + README text → nodes, candidate pairs → weighted edges → pruned
 // edges → `GraphFile`. Pure: the caller does all I/O.
 //
-// M1 scope: topic, owner and mention signals only. Every node is in the
-// "Unclustered" group (-1) until clustering lands (M2). x/y come from the
+// Signals: topic, owner, mention and, when embeddings are given, semantic
+// (dense cosine over all pairs, T2.2). Pruning streams candidates through a
+// per-node top-k heap, so memory stays O(n·k) even for all n² pairs. Every
+// node is in the "Unclustered" group (-1) until clustering lands (T2.3). x/y come from the
 // seeded ForceAtlas2 layout (FR-27). Output order is deterministic (nodes by
 // id, edges by `(source, target)` with `source < target`); rounding and schema
 // key order are applied by `lib/serialize.ts` before writing.
@@ -20,9 +22,14 @@ import {
 import { computeLayout, type LayoutOptions } from "./layout.ts";
 import { buildMentionIndex, findMentions } from "./mentions.ts";
 import { degreeMetrics } from "./metrics.ts";
-import { pruneEdges } from "./prune.ts";
+import { TopKPruner } from "./prune.ts";
 import { cleanReadme, excerpt, extractLinks } from "./readme.ts";
-import { candidatePairs } from "./signals.ts";
+import {
+  candidatePairs,
+  orderSignals,
+  pairKey,
+  type EdgeSignals,
+} from "./signals.ts";
 import type { RawRepo } from "./stars.ts";
 import {
   combinedWeight,
@@ -40,6 +47,13 @@ export const EXCERPT_CHARS = 500;
 
 /** Signals available in M1 (no embeddings, no dependencies). */
 export const M1_SIGNALS: readonly SignalName[] = ["topic", "mention", "owner"];
+/** Signals available in M2-M3 (embeddings, no dependencies until M4). */
+export const M2_SIGNALS: readonly SignalName[] = [
+  "semantic",
+  "topic",
+  "mention",
+  "owner",
+];
 
 export interface BuildGraphOptions {
   weights: SignalWeights;
@@ -58,12 +72,19 @@ export interface BuildGraphInput {
   repos: readonly RawRepo[];
   /** Raw README markdown by `nameWithOwner`; absent = no README. */
   readmes: ReadonlyMap<string, string>;
+  /**
+   * Embedding vectors by `nameWithOwner` (FR-5). Used only when `semantic` is
+   * enabled; pairs where either side has no vector get no semantic signal.
+   */
+  embeddings?: ReadonlyMap<string, ArrayLike<number>>;
   options: BuildGraphOptions;
 }
 
 export interface BuildGraphStats {
   nodes: number;
   candidates: number;
+  /** Pairs with a semantic (cosine) signal. */
+  semanticPairs: number;
   edges: number;
   forced: number;
   mentionEdges: number;
@@ -151,26 +172,60 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
     ? detectMentions(repos, input.readmes)
     : new Map<string, string[]>();
 
-  const candidates = candidatePairs({ repos, mentions }).map((pair) => {
-    const signals = { ...pair.signals };
+  const sparse = candidatePairs({ repos, mentions });
+  const pruner = new TopKPruner<ScoredEdge>({
+    k: options.k,
+    minWeight: options.minWeight,
+  });
+  const offer = (source: string, target: string, raw: EdgeSignals) => {
+    const signals = { ...raw };
     if (!enabled.has("topic")) {
       delete signals.topic;
       delete signals.sharedTopics;
     }
     if (!enabled.has("owner")) delete signals.owner;
-    return {
-      source: pair.source,
-      target: pair.target,
-      weight: combinedWeight(signals, coef, options.semanticRange),
-      forced: isForced(signals),
-      signals,
-    };
-  });
+    const weight = combinedWeight(signals, coef, options.semanticRange);
+    const forced = isForced(signals);
+    pruner.offer(source, target, weight, forced, () => ({
+      source,
+      target,
+      weight,
+      forced,
+      signals: orderSignals(signals),
+    }));
+  };
 
-  const kept = pruneEdges(
-    candidates.filter((c) => c.forced || c.weight > 0),
-    { k: options.k, minWeight: options.minWeight },
-  );
+  let semanticPairs = 0;
+  const vectors = enabled.has("semantic")
+    ? normalizedVectors(ids, input.embeddings)
+    : [];
+  if (vectors.some((v) => v !== undefined)) {
+    // Dense pass (FR-20): every pair, merged with its sparse signals. `ids` is
+    // sorted, so i < j gives source < target.
+    const sparseByKey = new Map(
+      sparse.map((p) => [pairKey(p.source, p.target), p.signals]),
+    );
+    for (let i = 0; i < ids.length; i++) {
+      const vi = vectors[i];
+      for (let j = i + 1; j < ids.length; j++) {
+        const a = ids[i]!;
+        const b = ids[j]!;
+        const base = sparseByKey.get(pairKey(a, b));
+        const vj = vectors[j];
+        if (vi === undefined || vj === undefined) {
+          if (base) offer(a, b, base);
+          continue;
+        }
+        semanticPairs++;
+        // Stored raw (FR-23); rescaled only inside combinedWeight (FR-21).
+        offer(a, b, { ...base, semantic: dot(vi, vj) });
+      }
+    }
+  } else {
+    for (const pair of sparse) offer(pair.source, pair.target, pair.signals);
+  }
+
+  const kept = pruner.result();
   const edges: RepoEdge[] = kept.map((e) => ({
     source: e.source,
     target: e.target,
@@ -209,11 +264,56 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
     graph,
     stats: {
       nodes: nodes.length,
-      candidates: candidates.length,
+      candidates: pruner.offered,
+      semanticPairs,
       edges: edges.length,
       forced: kept.filter((e) => e.forced).length,
       mentionEdges: edges.filter((e) => e.signals.mention).length,
       isolated: nodes.filter((n) => n.metrics.degree === 0).length,
     },
   };
+}
+
+interface ScoredEdge {
+  source: string;
+  target: string;
+  weight: number;
+  forced: boolean;
+  signals: EdgeSignals;
+}
+
+/**
+ * Unit-length Float64 copies of the vectors in `ids` order, so cosine is a
+ * plain dot product. Missing or zero vectors stay `undefined`; vectors whose
+ * length differs from the first one found are rejected.
+ */
+function normalizedVectors(
+  ids: readonly string[],
+  embeddings: ReadonlyMap<string, ArrayLike<number>> | undefined,
+): (Float64Array | undefined)[] {
+  let dims: number | undefined;
+  return ids.map((id) => {
+    const v = embeddings?.get(id);
+    if (v === undefined || v.length === 0) return undefined;
+    dims ??= v.length;
+    if (v.length !== dims) {
+      throw new Error(
+        `embedding for ${id} has ${v.length} dims, expected ${dims}`,
+      );
+    }
+    const out = Float64Array.from(v);
+    let sumSq = 0;
+    for (const x of out) sumSq += x * x;
+    const norm = Math.sqrt(sumSq);
+    if (norm === 0) return undefined;
+    for (let k = 0; k < out.length; k++) out[k]! /= norm;
+    return out;
+  });
+}
+
+function dot(a: Float64Array, b: Float64Array): number {
+  let s = 0;
+  for (let k = 0; k < a.length; k++) s += a[k]! * b[k]!;
+  // Clamp float drift so the schema's [-1, 1] range always holds.
+  return Math.min(1, Math.max(-1, s));
 }
