@@ -8,6 +8,7 @@ import {
   Globe,
   Scale,
   Star,
+  Tag,
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -27,7 +28,7 @@ import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 // Repo detail panel (T3.4): metadata and links (FR-40), README excerpt
-// (FR-41) and a cluster chip that filters the graph to that cluster (FR-43).
+// (FR-41), user tags from data/manual.yaml (FR-9) and a cluster chip that filters the graph to that cluster (FR-43).
 // "Similar repos" (FR-42, T3.5) follow; enrichment (FR-44, T5.6) slots in later.
 
 interface DetailPanelProps {
@@ -95,6 +96,22 @@ export function DetailPanel({
           </Fact>
         )}
       </dl>
+
+      {repo.tags && repo.tags.length > 0 && (
+        <section aria-label="Tags">
+          <ul className="flex flex-wrap gap-1">
+            {repo.tags.map((tag) => (
+              <li
+                key={tag}
+                className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-foreground"
+              >
+                <Tag className="size-3" aria-hidden="true" />
+                {tag}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {repo.topics.length > 0 && (
         <section aria-label="Topics">

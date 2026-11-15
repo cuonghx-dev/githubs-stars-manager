@@ -79,7 +79,7 @@ export function combinedWeight(
 }
 
 /** Mention, dependency and manual edges are always kept (FR-22). */
-export function isForced(signals: EdgeSignals & { manual?: string }): boolean {
+export function isForced(signals: EdgeSignals): boolean {
   return (
     signals.mention === true ||
     signals.dependency === true ||

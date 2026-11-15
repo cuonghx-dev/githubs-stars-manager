@@ -5,6 +5,7 @@
 // - mention: either README links to the other (FR-28), undirected.
 // - dependency: either depends on the other (M4).
 // - owner: same owner (case-insensitive).
+// - manual: label of a hand-written edge from data/manual.yaml (FR-29).
 //
 // Candidate pairs are only produced where at least one signal is non-zero, so
 // a graph without embeddings never builds the full O(n²) pair list. All
@@ -18,6 +19,8 @@ export interface EdgeSignals {
   mention?: boolean;
   dependency?: boolean;
   owner?: boolean;
+  /** Manual edge label, e.g. "alternative-of" (FR-29). */
+  manual?: string;
 }
 
 /** An undirected repo pair with `source < target` (code-unit order). */
@@ -99,10 +102,15 @@ export interface CandidateInput {
    * `resolveDependencies`, FR-7). Unknown repo names and self-edges are ignored.
    */
   dependencies?: ReadonlyMap<string, readonly string[]>;
+  /**
+   * Labelled manual edges (FR-29, `lib/manual.ts`). Unknown repo names and
+   * self-edges are ignored; the first label for a pair wins.
+   */
+  manual?: readonly { from: string; to: string; label: string }[];
 }
 
 /**
- * All pairs with a non-zero topic, mention, dependency or owner signal, sorted by
+ * All pairs with a non-zero topic, mention, dependency, owner or manual signal, sorted by
  * `(source, target)`. Each pair carries only the signals that are present.
  */
 export function candidatePairs(input: CandidateInput): CandidatePair[] {
@@ -182,6 +190,13 @@ export function candidatePairs(input: CandidateInput): CandidatePair[] {
     }
   }
 
+  // Manual: labelled, undirected.
+  for (const { from, to, label } of input.manual ?? []) {
+    if (from === to || !names.has(from) || !names.has(to)) continue;
+    const pair = get(from, to);
+    pair.signals.manual ??= label;
+  }
+
   return [...pairs.values()]
     .map((pair) => ({ ...pair, signals: orderSignals(pair.signals) }))
     .sort((a, b) =>
@@ -206,5 +221,6 @@ export function orderSignals(s: EdgeSignals): EdgeSignals {
   if (s.mention !== undefined) out.mention = s.mention;
   if (s.dependency !== undefined) out.dependency = s.dependency;
   if (s.owner !== undefined) out.owner = s.owner;
+  if (s.manual !== undefined) out.manual = s.manual;
   return out;
 }

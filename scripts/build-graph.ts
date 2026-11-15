@@ -4,7 +4,9 @@
 //
 // Signals: semantic (from data/embeddings.json, `pnpm embed`), topic, owner,
 // mention and dependency (from data/raw/deps.json, `pnpm sync`, FR-7), weights
-// renormalised per FR-21. Without a deps file the dependency signal is off. Without an embeddings file the
+// renormalised per FR-21. Optional data/manual.yaml adds user tags, labelled
+// forced edges and a hide list (FR-9, FR-29); invalid entries are reported as
+// warnings, never fatal. Without a deps file the dependency signal is off. Without an embeddings file the
 // build falls back to the M1 signals with a warning. Seeded Louvain clusters
 // (FR-24) and seeded ForceAtlas2 layout. The output is schema-validated
 // and byte-identical across runs apart from `generatedAt` (NFR-4).
@@ -20,6 +22,7 @@ import {
 } from "./lib/deps.ts";
 import { M4_SIGNALS, buildGraph, type BuildGraphOptions } from "./lib/graph.ts";
 import { createLogger, type Logger } from "./lib/log.ts";
+import { emptyManualData, parseManual, type ManualData } from "./lib/manual.ts";
 import { readmePath } from "./lib/readmes.ts";
 import { normalizeGraph } from "./lib/serialize.ts";
 import {
@@ -34,6 +37,8 @@ import type { EmbeddingsFile } from "./embed.ts";
 export const GRAPH_PATH = resolve(ROOT, "public/graph.json");
 /** Same path as `EMBEDDINGS_PATH` in embed.ts (not imported: it loads the model runtime). */
 export const EMBEDDINGS_PATH = resolve(ROOT, "data/embeddings.json");
+/** Hand-edited tags, labelled edges and hide list (FR-9, PRD §5.4). */
+export const MANUAL_PATH = resolve(ROOT, "data/manual.yaml");
 /** NFR-2 payload budget. */
 export const GRAPH_SIZE_BUDGET = 3 * 1024 * 1024;
 
@@ -46,6 +51,8 @@ export interface BuildGraphDeps {
   embeddingsPath?: string | null;
   /** `data/raw/deps.json`; absent/`null` disables the dependency signal. */
   depsPath?: string | null;
+  /** `data/manual.yaml`; absent/`null` or missing file = no manual data. */
+  manualPath?: string | null;
   /** Only vectors from this model are used (FR-5); defaults to the config model. */
   modelId?: string;
   includePrivate: boolean;
@@ -65,7 +72,15 @@ export async function runBuildGraph(deps: BuildGraphDeps): Promise<GraphFile> {
     );
   }
   // sync already filters; re-check so a stale file never leaks private repos.
-  const repos = filterPrivate(stars.repos, deps.includePrivate);
+  const visible = filterPrivate(stars.repos, deps.includePrivate);
+
+  // Manual data (FR-9, FR-29): problems are warnings, never fatal.
+  const manual = await readManual(
+    deps.manualPath,
+    visible.map((r) => r.nameWithOwner),
+  );
+  for (const problem of manual.problems) step.warn(`manual.yaml ${problem}`);
+  const repos = visible.filter((r) => !manual.hide.has(r.nameWithOwner));
 
   const readmes = new Map<string, string>();
   await Promise.all(
@@ -147,6 +162,8 @@ export async function runBuildGraph(deps: BuildGraphDeps): Promise<GraphFile> {
     readmes,
     embeddings,
     dependencies,
+    manualEdges: manual.edges,
+    tags: manual.tags,
     options,
   });
 
@@ -177,12 +194,33 @@ export async function runBuildGraph(deps: BuildGraphDeps): Promise<GraphFile> {
   step.set("forced", stats.forced);
   step.set("mentions", stats.mentionEdges);
   step.set("dependencies", stats.dependencyEdges);
+  step.set("manual", stats.manualEdges);
+  step.set("tagged", manual.tags.size);
+  step.set("hidden", visible.length - repos.length);
+  step.set("manualProblems", manual.problems.length);
   step.set("isolated", stats.isolated);
   step.set("clusters", stats.clusters);
   step.set("unclustered", stats.unclustered);
   step.set("kb", Math.round(bytes / 1024));
   step.done();
   return output;
+}
+
+async function readManual(
+  path: string | null | undefined,
+  knownIds: readonly string[],
+): Promise<ManualData> {
+  if (path == null) return emptyManualData();
+  let text: string;
+  try {
+    text = await readFile(path, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return emptyManualData();
+    }
+    throw error;
+  }
+  return parseManual(text, knownIds);
 }
 
 async function main(): Promise<void> {
@@ -193,6 +231,7 @@ async function main(): Promise<void> {
     graphPath: GRAPH_PATH,
     embeddingsPath: EMBEDDINGS_PATH,
     depsPath: DEPS_PATH,
+    manualPath: MANUAL_PATH,
     modelId: config.embedding.modelId,
     includePrivate: config.includePrivate,
     options: {

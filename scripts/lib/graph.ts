@@ -8,7 +8,8 @@
 // per-node top-k heap, so memory stays O(n·k) even for all n² pairs. Clusters
 // come from seeded Louvain over the kept edges (FR-24, `lib/clusters.ts`);
 // labels are the top TF-IDF terms per cluster (FR-25, `lib/tfidf.ts`). x/y
-// come from the seeded ForceAtlas2 layout (FR-27). Output order is deterministic (nodes by
+// come from the seeded ForceAtlas2 layout (FR-27). Manual edges and tags from
+// data/manual.yaml (FR-9, FR-29) are forced, with weight max(w, 0.5). Output order is deterministic (nodes by
 // id, edges by `(source, target)` with `source < target`); rounding and schema
 // key order are applied by `lib/serialize.ts` before writing.
 
@@ -30,6 +31,7 @@ import {
 } from "./clusters.ts";
 import { clusterLabels } from "./tfidf.ts";
 import { computeLayout, type LayoutOptions } from "./layout.ts";
+import { MANUAL_MIN_WEIGHT, type ManualEdge } from "./manual.ts";
 import { buildMentionIndex, findMentions } from "./mentions.ts";
 import { bridgeMetrics, degreeMetrics } from "./metrics.ts";
 import { TopKPruner } from "./prune.ts";
@@ -105,6 +107,10 @@ export interface BuildGraphInput {
    * `lib/deps.ts`). Used only when `dependency` is enabled.
    */
   dependencies?: ReadonlyMap<string, readonly string[]>;
+  /** Labelled edges from data/manual.yaml (FR-29), always kept. */
+  manualEdges?: readonly ManualEdge[];
+  /** User tags by `nameWithOwner` from data/manual.yaml (FR-9). */
+  tags?: ReadonlyMap<string, readonly string[]>;
   options: BuildGraphOptions;
 }
 
@@ -119,6 +125,7 @@ export interface BuildGraphStats {
   forced: number;
   mentionEdges: number;
   dependencyEdges: number;
+  manualEdges: number;
   isolated: number;
   /** Real clusters (excluding "Unclustered"). */
   clusters: number;
@@ -159,6 +166,7 @@ export function toRepoNode(
   },
   position: { x: number; y: number } = { x: 0, y: 0 },
   cluster: number = UNCLUSTERED_ID,
+  tags: readonly string[] = [],
 ): RepoNode {
   const slash = repo.nameWithOwner.indexOf("/");
   const readmeExcerpt =
@@ -176,6 +184,7 @@ export function toRepoNode(
     ...(repo.primaryLanguage ? { language: repo.primaryLanguage } : {}),
     languages: repo.languages.slice(0, 3),
     topics: [...repo.topics],
+    ...(tags.length > 0 ? { tags: [...tags] } : {}),
     stars: repo.stargazerCount,
     forks: repo.forkCount,
     ...(repo.license ? { license: repo.license } : {}),
@@ -222,7 +231,12 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
     ? (input.dependencies ?? new Map<string, string[]>())
     : new Map<string, string[]>();
 
-  const sparse = candidatePairs({ repos, mentions, dependencies });
+  const sparse = candidatePairs({
+    repos,
+    mentions,
+    dependencies,
+    manual: input.manualEdges,
+  });
   const pruner = new TopKPruner<ScoredEdge>({
     k: options.k,
     minWeight: options.minWeight,
@@ -234,7 +248,12 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
       delete signals.sharedTopics;
     }
     if (!enabled.has("owner")) delete signals.owner;
-    const weight = combinedWeight(signals, coef, options.semanticRange);
+    const combined = combinedWeight(signals, coef, options.semanticRange);
+    // FR-29: manual edges never fall below MANUAL_MIN_WEIGHT.
+    const weight =
+      signals.manual !== undefined
+        ? Math.max(combined, MANUAL_MIN_WEIGHT)
+        : combined;
     const forced = isForced(signals);
     pruner.offer(source, target, weight, forced, () => ({
       source,
@@ -312,6 +331,7 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
       },
       positions.get(repo.nameWithOwner),
       clustering.assignment.get(repo.nameWithOwner) ?? UNCLUSTERED_ID,
+      input.tags?.get(repo.nameWithOwner),
     ),
   );
   const labels = clusterLabels(
@@ -352,6 +372,7 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
       forced: kept.filter((e) => e.forced).length,
       mentionEdges: edges.filter((e) => e.signals.mention).length,
       dependencyEdges: edges.filter((e) => e.signals.dependency).length,
+      manualEdges: edges.filter((e) => e.signals.manual !== undefined).length,
       isolated: nodes.filter((n) => n.metrics.degree === 0).length,
       clusters: clusters.filter((c) => c.id !== UNCLUSTERED_ID).length,
       unclustered: nodes.filter((n) => n.cluster === UNCLUSTERED_ID).length,
