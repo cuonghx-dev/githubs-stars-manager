@@ -50,6 +50,8 @@ export interface GraphConfig {
   readonly embedding: {
     /** transformers.js model id; part of the embedding cache key (FR-5). */
     readonly modelId: string;
+    /** Model weights; q8 keeps the first run inside NFR-3 (spike S1). Part of the cache key. */
+    readonly dtype: "q8" | "fp32";
     readonly dimensions: number;
     /** Cleaned README chars fed into the embedding text (FR-5). */
     readonly readmeChars: number;
@@ -92,6 +94,7 @@ const config: GraphConfig = {
   readmeConcurrency: 8,
   embedding: {
     modelId: "Xenova/all-MiniLM-L6-v2",
+    dtype: "q8",
     dimensions: 384,
     readmeChars: 2000,
     maxTokensPerChunk: 256,
