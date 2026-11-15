@@ -1,0 +1,528 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-15T00:00:00.000Z",
+  "user": "octo",
+  "clusters": [
+    {
+      "id": -1,
+      "label": "Unclustered",
+      "color": "#9ca3af",
+      "size": 12
+    }
+  ],
+  "nodes": [
+    {
+      "id": "facebook/jest",
+      "githubId": "R_facebook_jest",
+      "name": "jest",
+      "owner": "facebook",
+      "url": "https://github.com/facebook/jest",
+      "homepage": "https://jestjs.io",
+      "description": "Delightful JavaScript Testing.",
+      "language": "TypeScript",
+      "languages": [
+        "TypeScript",
+        "JavaScript"
+      ],
+      "topics": [
+        "testing",
+        "javascript"
+      ],
+      "stars": 44000,
+      "forks": 6400,
+      "license": "MIT",
+      "isArchived": false,
+      "isFork": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "cluster": -1,
+      "x": 13.97,
+      "y": -18.38,
+      "metrics": {
+        "degree": 2,
+        "weightedDegree": 0.9298
+      }
+    },
+    {
+      "id": "facebook/react",
+      "githubId": "R_facebook_react",
+      "name": "react",
+      "owner": "facebook",
+      "url": "https://github.com/facebook/react",
+      "homepage": "https://react.dev",
+      "description": "The library for web and native user interfaces.",
+      "language": "JavaScript",
+      "languages": [
+        "JavaScript",
+        "TypeScript",
+        "HTML"
+      ],
+      "topics": [
+        "react",
+        "ui",
+        "javascript",
+        "frontend"
+      ],
+      "stars": 230000,
+      "forks": 47000,
+      "license": "MIT",
+      "isArchived": false,
+      "isFork": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "cluster": -1,
+      "x": 20.53,
+      "y": 4.6,
+      "metrics": {
+        "degree": 2,
+        "weightedDegree": 0.6667
+      }
+    },
+    {
+      "id": "old/archived-tool",
+      "githubId": "R_old_archived-tool",
+      "name": "archived-tool",
+      "owner": "old",
+      "url": "https://github.com/old/archived-tool",
+      "description": "An archived CLI",
+      "language": "Go",
+      "languages": [
+        "Go"
+      ],
+      "topics": [
+        "cli"
+      ],
+      "stars": 300,
+      "forks": 20,
+      "license": "MIT",
+      "isArchived": true,
+      "isFork": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "starredAt": "2021-03-01T00:00:00Z",
+      "cluster": -1,
+      "x": 48.55,
+      "y": -0.98,
+      "metrics": {
+        "degree": 0,
+        "weightedDegree": 0
+      }
+    },
+    {
+      "id": "pmndrs/jotai",
+      "githubId": "R_pmndrs_jotai",
+      "name": "jotai",
+      "owner": "pmndrs",
+      "url": "https://github.com/pmndrs/jotai",
+      "description": "Primitive and flexible state management for React",
+      "readmeExcerpt": "Jotai\n\nPrimitive and flexible state management for React. Inspired by",
+      "language": "TypeScript",
+      "languages": [
+        "TypeScript"
+      ],
+      "topics": [
+        "react",
+        "state-management",
+        "atomic"
+      ],
+      "stars": 19000,
+      "forks": 600,
+      "license": "MIT",
+      "isArchived": false,
+      "isFork": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "cluster": -1,
+      "x": 24.36,
+      "y": 28.95,
+      "metrics": {
+        "degree": 2,
+        "weightedDegree": 1
+      }
+    },
+    {
+      "id": "pmndrs/zustand",
+      "githubId": "R_pmndrs_zustand",
+      "name": "zustand",
+      "owner": "pmndrs",
+      "url": "https://github.com/pmndrs/zustand",
+      "homepage": "https://zustand-demo.pmnd.rs/",
+      "description": "Bear necessities for state management in React",
+      "readmeExcerpt": "Zustand\n\nA small, fast state-management solution. Compare with Jotai and Redux.\n\nWorks with React.",
+      "language": "TypeScript",
+      "languages": [
+        "TypeScript"
+      ],
+      "topics": [
+        "react",
+        "state-management",
+        "hooks"
+      ],
+      "stars": 50000,
+      "forks": 1500,
+      "license": "MIT",
+      "isArchived": false,
+      "isFork": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "cluster": -1,
+      "x": 20.72,
+      "y": 19.64,
+      "metrics": {
+        "degree": 3,
+        "weightedDegree": 1.8772
+      }
+    },
+    {
+      "id": "reduxjs/redux",
+      "githubId": "R_reduxjs_redux",
+      "name": "redux",
+      "owner": "reduxjs",
+      "url": "https://github.com/reduxjs/redux",
+      "description": "A JS library for predictable global state management",
+      "language": "TypeScript",
+      "languages": [
+        "TypeScript"
+      ],
+      "topics": [
+        "react",
+        "state-management",
+        "redux"
+      ],
+      "stars": 61000,
+      "forks": 15000,
+      "license": "MIT",
+      "isArchived": false,
+      "isFork": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "cluster": -1,
+      "x": 14.05,
+      "y": 27.48,
+      "metrics": {
+        "degree": 2,
+        "weightedDegree": 0.9211
+      }
+    },
+    {
+      "id": "rust-lang/rust",
+      "githubId": "R_rust-lang_rust",
+      "name": "rust",
+      "owner": "rust-lang",
+      "url": "https://github.com/rust-lang/rust",
+      "homepage": "https://www.rust-lang.org",
+      "description": "Empowering everyone to build reliable and efficient software.",
+      "language": "Rust",
+      "languages": [
+        "Rust"
+      ],
+      "topics": [
+        "rust",
+        "compiler",
+        "language"
+      ],
+      "stars": 105000,
+      "forks": 13000,
+      "license": "MIT",
+      "isArchived": false,
+      "isFork": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "cluster": -1,
+      "x": -40.34,
+      "y": 5.98,
+      "metrics": {
+        "degree": 1,
+        "weightedDegree": 0.5
+      }
+    },
+    {
+      "id": "someone/dotfiles",
+      "githubId": "R_someone_dotfiles",
+      "name": "dotfiles",
+      "owner": "someone",
+      "url": "https://github.com/someone/dotfiles",
+      "description": "My dotfiles",
+      "language": "Shell",
+      "languages": [
+        "Shell",
+        "Lua"
+      ],
+      "topics": [
+        "dotfiles"
+      ],
+      "stars": 12,
+      "forks": 1,
+      "isArchived": false,
+      "isFork": true,
+      "pushedAt": "2020-01-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "cluster": -1,
+      "x": -51.45,
+      "y": -0.98,
+      "metrics": {
+        "degree": 0,
+        "weightedDegree": 0
+      }
+    },
+    {
+      "id": "tokio-rs/axum",
+      "githubId": "R_tokio-rs_axum",
+      "name": "axum",
+      "owner": "tokio-rs",
+      "url": "https://github.com/tokio-rs/axum",
+      "description": "Ergonomic and modular web framework built with Tokio, Tower, and Hyper",
+      "readmeExcerpt": "axum\n\nBuilt on tokio.",
+      "language": "Rust",
+      "languages": [
+        "Rust"
+      ],
+      "topics": [
+        "rust",
+        "http",
+        "async"
+      ],
+      "stars": 22000,
+      "forks": 1100,
+      "license": "MIT",
+      "isArchived": false,
+      "isFork": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "cluster": -1,
+      "x": -41.13,
+      "y": -11.49,
+      "metrics": {
+        "degree": 1,
+        "weightedDegree": 0.7368
+      }
+    },
+    {
+      "id": "tokio-rs/tokio",
+      "githubId": "R_tokio-rs_tokio",
+      "name": "tokio",
+      "owner": "tokio-rs",
+      "url": "https://github.com/tokio-rs/tokio",
+      "homepage": "https://tokio.rs",
+      "description": "A runtime for writing reliable asynchronous applications with Rust.",
+      "readmeExcerpt": "Tokio\n\nAn asynchronous runtime for the Rust programming language. Web apps:",
+      "language": "Rust",
+      "languages": [
+        "Rust"
+      ],
+      "topics": [
+        "rust",
+        "async",
+        "networking"
+      ],
+      "stars": 30000,
+      "forks": 2800,
+      "license": "MIT",
+      "isArchived": false,
+      "isFork": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "cluster": -1,
+      "x": -41.12,
+      "y": -3.4,
+      "metrics": {
+        "degree": 2,
+        "weightedDegree": 1.2368
+      }
+    },
+    {
+      "id": "vitejs/vite",
+      "githubId": "R_vitejs_vite",
+      "name": "vite",
+      "owner": "vitejs",
+      "url": "https://github.com/vitejs/vite",
+      "homepage": "https://vite.dev",
+      "description": "Next generation frontend tooling.",
+      "readmeExcerpt": "Vite\n\nNext generation frontend tooling. Test with Vitest.",
+      "language": "TypeScript",
+      "languages": [
+        "TypeScript",
+        "JavaScript"
+      ],
+      "topics": [
+        "vite",
+        "frontend",
+        "build-tool"
+      ],
+      "stars": 75000,
+      "forks": 7000,
+      "license": "MIT",
+      "isArchived": false,
+      "isFork": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "cluster": -1,
+      "x": 4.51,
+      "y": -35.75,
+      "metrics": {
+        "degree": 1,
+        "weightedDegree": 0.5
+      }
+    },
+    {
+      "id": "vitest-dev/vitest",
+      "githubId": "R_vitest-dev_vitest",
+      "name": "vitest",
+      "owner": "vitest-dev",
+      "url": "https://github.com/vitest-dev/vitest",
+      "homepage": "https://vitest.dev",
+      "description": "Next generation testing framework powered by Vite.",
+      "readmeExcerpt": "Vitest\n\nA Vite-native test framework. Jest compatible: see and",
+      "language": "TypeScript",
+      "languages": [
+        "TypeScript"
+      ],
+      "topics": [
+        "testing",
+        "vite",
+        "javascript"
+      ],
+      "stars": 15000,
+      "forks": 1300,
+      "license": "MIT",
+      "isArchived": false,
+      "isFork": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "cluster": -1,
+      "x": 9.9,
+      "y": -27.44,
+      "metrics": {
+        "degree": 2,
+        "weightedDegree": 1.2456
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "facebook/jest",
+      "target": "facebook/react",
+      "weight": 0.1842,
+      "signals": {
+        "topic": 0.2,
+        "sharedTopics": [
+          "javascript"
+        ],
+        "owner": true
+      }
+    },
+    {
+      "source": "facebook/jest",
+      "target": "vitest-dev/vitest",
+      "weight": 0.7456,
+      "signals": {
+        "topic": 0.6667,
+        "sharedTopics": [
+          "javascript",
+          "testing"
+        ],
+        "mention": true
+      }
+    },
+    {
+      "source": "facebook/react",
+      "target": "pmndrs/zustand",
+      "weight": 0.4825,
+      "signals": {
+        "topic": 0.1667,
+        "sharedTopics": [
+          "react"
+        ],
+        "mention": true
+      }
+    },
+    {
+      "source": "pmndrs/jotai",
+      "target": "pmndrs/zustand",
+      "weight": 0.7368,
+      "signals": {
+        "topic": 0.5,
+        "sharedTopics": [
+          "react",
+          "state-management"
+        ],
+        "mention": true,
+        "owner": true
+      }
+    },
+    {
+      "source": "pmndrs/jotai",
+      "target": "reduxjs/redux",
+      "weight": 0.2632,
+      "signals": {
+        "topic": 0.5,
+        "sharedTopics": [
+          "react",
+          "state-management"
+        ]
+      }
+    },
+    {
+      "source": "pmndrs/zustand",
+      "target": "reduxjs/redux",
+      "weight": 0.6579,
+      "signals": {
+        "topic": 0.5,
+        "sharedTopics": [
+          "react",
+          "state-management"
+        ],
+        "mention": true
+      }
+    },
+    {
+      "source": "rust-lang/rust",
+      "target": "tokio-rs/tokio",
+      "weight": 0.5,
+      "signals": {
+        "topic": 0.2,
+        "sharedTopics": [
+          "rust"
+        ],
+        "mention": true
+      }
+    },
+    {
+      "source": "tokio-rs/axum",
+      "target": "tokio-rs/tokio",
+      "weight": 0.7368,
+      "signals": {
+        "topic": 0.5,
+        "sharedTopics": [
+          "async",
+          "rust"
+        ],
+        "mention": true,
+        "owner": true
+      }
+    },
+    {
+      "source": "vitejs/vite",
+      "target": "vitest-dev/vitest",
+      "weight": 0.5,
+      "signals": {
+        "topic": 0.2,
+        "sharedTopics": [
+          "vite"
+        ],
+        "mention": true
+      }
+    }
+  ]
+}

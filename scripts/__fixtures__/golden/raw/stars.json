@@ -1,0 +1,381 @@
+{
+  "version": 1,
+  "user": "octo",
+  "lastSyncAt": "2026-11-15T00:00:00Z",
+  "repos": [
+    {
+      "githubId": "R_facebook_jest",
+      "nameWithOwner": "facebook/jest",
+      "description": "Delightful JavaScript Testing.",
+      "url": "https://github.com/facebook/jest",
+      "homepageUrl": "https://jestjs.io",
+      "primaryLanguage": "TypeScript",
+      "languages": [
+        "TypeScript",
+        "JavaScript"
+      ],
+      "topics": [
+        "testing",
+        "javascript"
+      ],
+      "stargazerCount": 44000,
+      "forkCount": 6400,
+      "isArchived": false,
+      "isFork": false,
+      "isPrivate": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "license": "MIT",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "readme": {
+        "status": "missing",
+        "fetchedForPushedAt": "2026-10-01T00:00:00Z"
+      }
+    },
+    {
+      "githubId": "R_facebook_react",
+      "nameWithOwner": "facebook/react",
+      "description": "The library for web and native user interfaces.",
+      "url": "https://github.com/facebook/react",
+      "homepageUrl": "https://react.dev",
+      "primaryLanguage": "JavaScript",
+      "languages": [
+        "JavaScript",
+        "TypeScript",
+        "HTML"
+      ],
+      "topics": [
+        "react",
+        "ui",
+        "javascript",
+        "frontend"
+      ],
+      "stargazerCount": 230000,
+      "forkCount": 47000,
+      "isArchived": false,
+      "isFork": false,
+      "isPrivate": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "license": "MIT",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "readme": {
+        "status": "missing",
+        "fetchedForPushedAt": "2026-10-01T00:00:00Z"
+      }
+    },
+    {
+      "githubId": "R_old_archived-tool",
+      "nameWithOwner": "old/archived-tool",
+      "description": "An archived CLI",
+      "url": "https://github.com/old/archived-tool",
+      "homepageUrl": null,
+      "primaryLanguage": "Go",
+      "languages": [
+        "Go"
+      ],
+      "topics": [
+        "cli"
+      ],
+      "stargazerCount": 300,
+      "forkCount": 20,
+      "isArchived": true,
+      "isFork": false,
+      "isPrivate": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "license": "MIT",
+      "starredAt": "2021-03-01T00:00:00Z",
+      "readme": {
+        "status": "missing",
+        "fetchedForPushedAt": "2026-10-01T00:00:00Z"
+      }
+    },
+    {
+      "githubId": "R_pmndrs_jotai",
+      "nameWithOwner": "pmndrs/jotai",
+      "description": "Primitive and flexible state management for React",
+      "url": "https://github.com/pmndrs/jotai",
+      "homepageUrl": null,
+      "primaryLanguage": "TypeScript",
+      "languages": [
+        "TypeScript"
+      ],
+      "topics": [
+        "react",
+        "state-management",
+        "atomic"
+      ],
+      "stargazerCount": 19000,
+      "forkCount": 600,
+      "isArchived": false,
+      "isFork": false,
+      "isPrivate": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "license": "MIT",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "readme": {
+        "status": "ok",
+        "fetchedForPushedAt": "2026-10-01T00:00:00Z"
+      }
+    },
+    {
+      "githubId": "R_pmndrs_zustand",
+      "nameWithOwner": "pmndrs/zustand",
+      "description": "Bear necessities for state management in React",
+      "url": "https://github.com/pmndrs/zustand",
+      "homepageUrl": "https://zustand-demo.pmnd.rs/",
+      "primaryLanguage": "TypeScript",
+      "languages": [
+        "TypeScript"
+      ],
+      "topics": [
+        "react",
+        "state-management",
+        "hooks"
+      ],
+      "stargazerCount": 50000,
+      "forkCount": 1500,
+      "isArchived": false,
+      "isFork": false,
+      "isPrivate": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "license": "MIT",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "readme": {
+        "status": "ok",
+        "fetchedForPushedAt": "2026-10-01T00:00:00Z"
+      }
+    },
+    {
+      "githubId": "R_reduxjs_redux",
+      "nameWithOwner": "reduxjs/redux",
+      "description": "A JS library for predictable global state management",
+      "url": "https://github.com/reduxjs/redux",
+      "homepageUrl": null,
+      "primaryLanguage": "TypeScript",
+      "languages": [
+        "TypeScript"
+      ],
+      "topics": [
+        "react",
+        "state-management",
+        "redux"
+      ],
+      "stargazerCount": 61000,
+      "forkCount": 15000,
+      "isArchived": false,
+      "isFork": false,
+      "isPrivate": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "license": "MIT",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "readme": {
+        "status": "missing",
+        "fetchedForPushedAt": "2026-10-01T00:00:00Z"
+      }
+    },
+    {
+      "githubId": "R_rust-lang_rust",
+      "nameWithOwner": "rust-lang/rust",
+      "description": "Empowering everyone to build reliable and efficient software.",
+      "url": "https://github.com/rust-lang/rust",
+      "homepageUrl": "https://www.rust-lang.org",
+      "primaryLanguage": "Rust",
+      "languages": [
+        "Rust"
+      ],
+      "topics": [
+        "rust",
+        "compiler",
+        "language"
+      ],
+      "stargazerCount": 105000,
+      "forkCount": 13000,
+      "isArchived": false,
+      "isFork": false,
+      "isPrivate": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "license": "MIT",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "readme": {
+        "status": "missing",
+        "fetchedForPushedAt": "2026-10-01T00:00:00Z"
+      }
+    },
+    {
+      "githubId": "R_secret_private-repo",
+      "nameWithOwner": "secret/private-repo",
+      "description": null,
+      "url": "https://github.com/secret/private-repo",
+      "homepageUrl": null,
+      "primaryLanguage": null,
+      "languages": [],
+      "topics": [
+        "react"
+      ],
+      "stargazerCount": 100,
+      "forkCount": 10,
+      "isArchived": false,
+      "isFork": false,
+      "isPrivate": true,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "license": "MIT",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "readme": {
+        "status": "missing",
+        "fetchedForPushedAt": "2026-10-01T00:00:00Z"
+      }
+    },
+    {
+      "githubId": "R_someone_dotfiles",
+      "nameWithOwner": "someone/dotfiles",
+      "description": "My dotfiles",
+      "url": "https://github.com/someone/dotfiles",
+      "homepageUrl": null,
+      "primaryLanguage": "Shell",
+      "languages": [
+        "Shell",
+        "Lua"
+      ],
+      "topics": [
+        "dotfiles"
+      ],
+      "stargazerCount": 12,
+      "forkCount": 1,
+      "isArchived": false,
+      "isFork": true,
+      "isPrivate": false,
+      "pushedAt": null,
+      "createdAt": "2020-01-01T00:00:00Z",
+      "license": null,
+      "starredAt": "2026-11-01T00:00:00Z",
+      "readme": {
+        "status": "missing",
+        "fetchedForPushedAt": "2026-10-01T00:00:00Z"
+      }
+    },
+    {
+      "githubId": "R_tokio-rs_axum",
+      "nameWithOwner": "tokio-rs/axum",
+      "description": "Ergonomic and modular web framework built with Tokio, Tower, and Hyper",
+      "url": "https://github.com/tokio-rs/axum",
+      "homepageUrl": null,
+      "primaryLanguage": "Rust",
+      "languages": [
+        "Rust"
+      ],
+      "topics": [
+        "rust",
+        "http",
+        "async"
+      ],
+      "stargazerCount": 22000,
+      "forkCount": 1100,
+      "isArchived": false,
+      "isFork": false,
+      "isPrivate": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "license": "MIT",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "readme": {
+        "status": "ok",
+        "fetchedForPushedAt": "2026-10-01T00:00:00Z"
+      }
+    },
+    {
+      "githubId": "R_tokio-rs_tokio",
+      "nameWithOwner": "tokio-rs/tokio",
+      "description": "A runtime for writing reliable asynchronous applications with Rust.",
+      "url": "https://github.com/tokio-rs/tokio",
+      "homepageUrl": "https://tokio.rs",
+      "primaryLanguage": "Rust",
+      "languages": [
+        "Rust"
+      ],
+      "topics": [
+        "rust",
+        "async",
+        "networking"
+      ],
+      "stargazerCount": 30000,
+      "forkCount": 2800,
+      "isArchived": false,
+      "isFork": false,
+      "isPrivate": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "license": "MIT",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "readme": {
+        "status": "ok",
+        "fetchedForPushedAt": "2026-10-01T00:00:00Z"
+      }
+    },
+    {
+      "githubId": "R_vitejs_vite",
+      "nameWithOwner": "vitejs/vite",
+      "description": "Next generation frontend tooling.",
+      "url": "https://github.com/vitejs/vite",
+      "homepageUrl": "https://vite.dev",
+      "primaryLanguage": "TypeScript",
+      "languages": [
+        "TypeScript",
+        "JavaScript"
+      ],
+      "topics": [
+        "vite",
+        "frontend",
+        "build-tool"
+      ],
+      "stargazerCount": 75000,
+      "forkCount": 7000,
+      "isArchived": false,
+      "isFork": false,
+      "isPrivate": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "license": "MIT",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "readme": {
+        "status": "ok",
+        "fetchedForPushedAt": "2026-10-01T00:00:00Z"
+      }
+    },
+    {
+      "githubId": "R_vitest-dev_vitest",
+      "nameWithOwner": "vitest-dev/vitest",
+      "description": "Next generation testing framework powered by Vite.",
+      "url": "https://github.com/vitest-dev/vitest",
+      "homepageUrl": "https://vitest.dev",
+      "primaryLanguage": "TypeScript",
+      "languages": [
+        "TypeScript"
+      ],
+      "topics": [
+        "testing",
+        "vite",
+        "javascript"
+      ],
+      "stargazerCount": 15000,
+      "forkCount": 1300,
+      "isArchived": false,
+      "isFork": false,
+      "isPrivate": false,
+      "pushedAt": "2026-10-01T00:00:00Z",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "license": "MIT",
+      "starredAt": "2026-11-01T00:00:00Z",
+      "readme": {
+        "status": "ok",
+        "fetchedForPushedAt": "2026-10-01T00:00:00Z"
+      }
+    }
+  ]
+}

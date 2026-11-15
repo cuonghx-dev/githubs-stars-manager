@@ -4,10 +4,10 @@
 // edges → `GraphFile`. Pure: the caller does all I/O.
 //
 // M1 scope: topic, owner and mention signals only. Every node is in the
-// "Unclustered" group (-1) until clustering lands (M2), and x/y are 0 until
-// the layout step (T1.7). Rounding and stable serialisation are T1.7 too;
-// output order is already deterministic (nodes by id, edges by
-// `(source, target)` with `source < target`).
+// "Unclustered" group (-1) until clustering lands (M2). x/y come from the
+// seeded ForceAtlas2 layout (FR-27). Output order is deterministic (nodes by
+// id, edges by `(source, target)` with `source < target`); rounding and schema
+// key order are applied by `lib/serialize.ts` before writing.
 
 import type { SignalName } from "../../config/graph.config.ts";
 import {
@@ -17,6 +17,7 @@ import {
   type RepoEdge,
   type RepoNode,
 } from "../../src/lib/graph-schema.ts";
+import { computeLayout, type LayoutOptions } from "./layout.ts";
 import { buildMentionIndex, findMentions } from "./mentions.ts";
 import { degreeMetrics } from "./metrics.ts";
 import { pruneEdges } from "./prune.ts";
@@ -47,6 +48,8 @@ export interface BuildGraphOptions {
   minWeight: number;
   /** Signals to combine; the weights of the others are renormalised away. */
   enabledSignals: readonly SignalName[];
+  /** ForceAtlas2 iterations and seed (FR-27, NFR-4). */
+  layout: LayoutOptions;
 }
 
 export interface BuildGraphInput {
@@ -94,6 +97,7 @@ export function toRepoNode(
   repo: RawRepo,
   readme: string | undefined,
   metrics: { degree: number; weightedDegree: number },
+  position: { x: number; y: number } = { x: 0, y: 0 },
 ): RepoNode {
   const slash = repo.nameWithOwner.indexOf("/");
   const readmeExcerpt =
@@ -121,8 +125,8 @@ export function toRepoNode(
     createdAt: repo.createdAt,
     starredAt: repo.starredAt,
     cluster: UNCLUSTERED_ID,
-    x: 0,
-    y: 0,
+    x: position.x,
+    y: position.y,
     metrics: {
       degree: metrics.degree,
       weightedDegree: metrics.weightedDegree,
@@ -175,11 +179,13 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
   }));
 
   const metrics = degreeMetrics(ids, edges);
+  const positions = computeLayout(ids, edges, options.layout);
   const nodes = repos.map((repo) =>
     toRepoNode(
       repo,
       input.readmes.get(repo.nameWithOwner),
       metrics.get(repo.nameWithOwner)!,
+      positions.get(repo.nameWithOwner),
     ),
   );
   const clusters: Cluster[] = [

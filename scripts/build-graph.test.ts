@@ -1,6 +1,6 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import config from "../config/graph.config.ts";
 import { graphFileSchema } from "../src/lib/graph-schema.ts";
@@ -63,6 +63,7 @@ function deps(extra: Partial<BuildGraphDeps> = {}): BuildGraphDeps {
       k: config.k,
       minWeight: config.minWeight,
       enabledSignals: M1_SIGNALS,
+      layout: config.layout,
     },
     now: () => new Date("2026-11-15T00:00:00Z"),
     ...extra,
@@ -133,5 +134,43 @@ describe("runBuildGraph", () => {
       repos: [],
     });
     await expect(runBuildGraph(deps())).rejects.toThrow(/version 99/);
+  });
+});
+
+// Golden test (NFR-4, plan §6): build the 12-repo fixture twice and require
+// byte-identical output apart from `generatedAt`, then compare with the
+// committed snapshot. Regenerate with `pnpm exec vitest run -u` after an
+// intentional change to signals, weights, layout or serialisation.
+describe("build-graph golden", () => {
+  const fixture = resolve(import.meta.dirname, "__fixtures__/golden");
+
+  async function buildAt(iso: string): Promise<string> {
+    await runBuildGraph(deps({ now: () => new Date(iso) }));
+    return readFile(join(dir, "public/graph.json"), "utf8");
+  }
+
+  it("is byte-identical across runs apart from generatedAt", async () => {
+    await cp(join(fixture, "raw"), join(dir, "raw"), { recursive: true });
+
+    const first = await buildAt("2026-11-15T00:00:00Z");
+    const second = await buildAt("2027-01-02T03:04:05Z");
+    expect(first).toContain('"generatedAt": "2026-11-15T00:00:00.000Z"');
+    expect(second).toContain('"generatedAt": "2027-01-02T03:04:05.000Z"');
+    const strip = (t: string) =>
+      t.replace(/"generatedAt": "[^"]*"/, '"generatedAt": ""');
+    expect(strip(second)).toBe(strip(first));
+
+    const graph = graphFileSchema.parse(JSON.parse(first));
+    expect(graph.nodes).toHaveLength(12); // private repo filtered out
+    expect(graph.nodes.some((n) => n.x !== 0 || n.y !== 0)).toBe(true);
+    for (const n of graph.nodes) {
+      expect(Math.round(n.x * 100) / 100).toBe(n.x);
+      expect(Math.round(n.y * 100) / 100).toBe(n.y);
+    }
+    for (const e of graph.edges) {
+      expect(Math.round(e.weight * 1e4) / 1e4).toBe(e.weight);
+    }
+
+    await expect(first).toMatchFileSnapshot(join(fixture, "graph.golden.json"));
   });
 });

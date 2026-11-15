@@ -1,8 +1,10 @@
 // `pnpm build-graph`: data/raw/stars.json + READMEs → public/graph.json
-// (FR-6, FR-20-23). I/O and wiring only; logic lives in scripts/lib/graph.ts.
+// (FR-6, FR-20-23, FR-27). I/O and wiring only; logic lives in
+// scripts/lib/graph.ts, stable output in scripts/lib/serialize.ts.
 //
 // M1: topic, owner and mention signals (weights renormalised per FR-21); all
-// nodes unclustered; layout and stable serialisation come with T1.7.
+// nodes unclustered; seeded ForceAtlas2 layout. The output is schema-validated
+// and byte-identical across runs apart from `generatedAt` (NFR-4).
 
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -11,6 +13,7 @@ import { readJsonOr, writeTextAtomic } from "./lib/fs-atomic.ts";
 import { M1_SIGNALS, buildGraph, type BuildGraphOptions } from "./lib/graph.ts";
 import { createLogger, type Logger } from "./lib/log.ts";
 import { readmePath } from "./lib/readmes.ts";
+import { normalizeGraph } from "./lib/serialize.ts";
 import {
   STARS_FILE_VERSION,
   filterPrivate,
@@ -81,7 +84,9 @@ export async function runBuildGraph(deps: BuildGraphDeps): Promise<GraphFile> {
     );
   }
 
-  const text = `${JSON.stringify(graph, null, 2)}\n`;
+  // Sort, round and validate before writing (NFR-4, plan §3.2).
+  const output = normalizeGraph(graph);
+  const text = `${JSON.stringify(output, null, 2)}\n`;
   const bytes = Buffer.byteLength(text, "utf8");
   if (bytes > GRAPH_SIZE_BUDGET) {
     step.warn(
@@ -98,7 +103,7 @@ export async function runBuildGraph(deps: BuildGraphDeps): Promise<GraphFile> {
   step.set("isolated", stats.isolated);
   step.set("kb", Math.round(bytes / 1024));
   step.done();
-  return graph;
+  return output;
 }
 
 async function main(): Promise<void> {
@@ -114,6 +119,7 @@ async function main(): Promise<void> {
       k: config.k,
       minWeight: config.minWeight,
       enabledSignals: M1_SIGNALS,
+      layout: config.layout,
     },
     now: () => new Date(),
   });

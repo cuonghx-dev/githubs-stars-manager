@@ -41,6 +41,7 @@ const options: BuildGraphOptions = {
   k: config.k,
   minWeight: config.minWeight,
   enabledSignals: M1_SIGNALS,
+  layout: config.layout,
 };
 
 const repos: RawRepo[] = [
