@@ -224,6 +224,7 @@ export async function runBuildGraph(deps: BuildGraphDeps): Promise<GraphFile> {
   step.set("enriched", enrichment.entries.size);
   step.set("alternatives", enrichment.edges.length);
   step.set("enrichmentProblems", enrichment.problems.length);
+  step.set("concepts", stats.concepts);
   step.set("isolated", stats.isolated);
   step.set("clusters", stats.clusters);
   step.set("unclustered", stats.unclustered);

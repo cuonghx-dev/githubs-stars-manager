@@ -8,6 +8,7 @@ import { DuplicatesView } from "@/features/duplicates/DuplicatesView";
 import { ForgottenView } from "@/features/forgotten/ForgottenView";
 import { FilterBar, NoResults } from "@/features/filters/FilterBar";
 import { buildSimilarIndex } from "@/features/detail/reasons";
+import { ConceptToggle } from "@/features/graph/ConceptToggle";
 import { GraphCanvas } from "@/features/graph/GraphCanvas";
 import { PathView } from "@/features/path/PathView";
 import { SearchBox } from "@/features/search/SearchBox";
@@ -123,7 +124,15 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
       detailOpen={detailOpen}
       onDetailOpenChange={setDetailOpen}
     >
-      <GraphCanvas graph={graph} clusters={data.clusters} nodes={data.nodes} />
+      <GraphCanvas
+        graph={graph}
+        clusters={data.clusters}
+        nodes={data.nodes}
+        concepts={data.concepts}
+      />
+      {view === "graph" && (data.concepts?.length ?? 0) > 0 && (
+        <ConceptToggle count={data.concepts?.length ?? 0} />
+      )}
       <NoResults matchCount={matchCount} />
       {view === "graph" && <WalkControls walk={walk} />}
       {view === "clusters" && (

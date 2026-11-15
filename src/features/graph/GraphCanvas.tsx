@@ -3,6 +3,7 @@ import { SigmaContainer, useRegisterEvents, useSigma } from "@react-sigma/core";
 import { useEffect, useMemo, useRef } from "react";
 import type { SigmaOptions } from "sigma/types";
 import { ClusterLabels } from "@/features/graph/ClusterLabels";
+import { ConceptLayer } from "@/features/graph/ConceptLayer";
 import {
   computeFocus,
   edgeFocusStyle,
@@ -31,7 +32,7 @@ import {
   type HollowColors,
   type KindColors,
 } from "@/features/graph/styles";
-import type { Cluster, RepoNode } from "@/lib/graph-schema";
+import type { Cluster, ConceptNode, RepoNode } from "@/lib/graph-schema";
 import {
   filtersActive,
   matchesFilters,
@@ -58,6 +59,9 @@ import type {
 // colour, 2-hop nodes are dimmed and the rest fade; Esc clears the selection
 // (handled by the global shortcuts, T3.10).
 // A hover highlight takes precedence over focus while the pointer is on a node.
+//
+// The concept layer (FR-73, T5.7) is an overlay toggled from the store; see
+// ConceptLayer.tsx.
 
 interface Palette extends FadeColors, FocusColors, KindColors, HollowColors {
   label: string;
@@ -124,9 +128,16 @@ interface GraphCanvasProps {
   graph: RepoGraph;
   clusters: readonly Cluster[];
   nodes: readonly RepoNode[];
+  /** Enrichment concept nodes (FR-73); empty when the graph has none. */
+  concepts?: readonly ConceptNode[];
 }
 
-export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
+export function GraphCanvas({
+  graph,
+  clusters,
+  nodes,
+  concepts = [],
+}: GraphCanvasProps) {
   const stateRef = useRef<CanvasState>({
     highlight: null,
     selected: null,
@@ -217,6 +228,9 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
         paletteRef={paletteRef}
       />
       <ClusterLabels clusters={clusters} nodes={nodes} />
+      {concepts.length > 0 && (
+        <ConceptLayer concepts={concepts} nodes={nodes} />
+      )}
     </SigmaContainer>
   );
 }

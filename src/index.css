@@ -92,6 +92,8 @@
   --graph-edge-mention: rgba(217, 119, 6, 0.6);
   --graph-edge-dependency: rgba(37, 99, 235, 0.6);
   --graph-node-hollow: #ffffff;
+  /* Concept layer links (T5.7, FR-73). */
+  --graph-edge-concept: rgba(124, 58, 237, 0.35);
 }
 
 .dark {
@@ -134,6 +136,7 @@
   --graph-edge-mention: rgba(251, 191, 36, 0.55);
   --graph-edge-dependency: rgba(96, 165, 250, 0.55);
   --graph-node-hollow: #0a0a0a;
+  --graph-edge-concept: rgba(167, 139, 250, 0.4);
 }
 
 @layer base {

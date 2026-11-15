@@ -8,7 +8,9 @@
 // per-node top-k heap, so memory stays O(n·k) even for all n² pairs. Clusters
 // come from seeded Louvain over the kept edges (FR-24, `lib/clusters.ts`);
 // labels are the top TF-IDF terms per cluster, from enrichment concepts when at
-// least half the members are enriched (FR-25, T5.4, `lib/tfidf.ts`). x/y
+// least half the members are enriched (FR-25, T5.4, `lib/tfidf.ts`). Enrichment
+// concepts shared by at least MIN_CONCEPT_REPOS repos become concept nodes for
+// the toggleable concept layer (FR-73, T5.7). x/y
 // come from the seeded ForceAtlas2 layout (FR-27). Manual edges and tags from
 // data/manual.yaml (FR-9, FR-29) are forced, with weight max(w, 0.5). Output order is deterministic (nodes by
 // id, edges by `(source, target)` with `source < target`); rounding and schema
@@ -18,6 +20,7 @@ import type { SignalName } from "../../config/graph.config.ts";
 import {
   GRAPH_FILE_VERSION,
   type Cluster,
+  type ConceptNode,
   type Duplicate,
   type GraphFile,
   type RepoEdge,
@@ -134,6 +137,8 @@ export interface BuildGraphStats {
   /** Real clusters (excluding "Unclustered"). */
   clusters: number;
   unclustered: number;
+  /** Concept nodes emitted for the concept layer (FR-73). */
+  concepts: number;
 }
 
 export interface BuildGraphResult {
@@ -142,6 +147,45 @@ export interface BuildGraphResult {
 }
 
 const byId = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * Minimum number of repos a concept must link to before it becomes a concept
+ * node (FR-73). A concept on a single repo adds a node without connecting
+ * anything, so it is left out of the layer.
+ */
+export const MIN_CONCEPT_REPOS = 2;
+
+/**
+ * Concept nodes for the concept layer (FR-73, T5.7): one per enrichment
+ * concept shared by at least `minRepos` of `repoIds`, linked to those repos.
+ * Concepts are already normalised by `lib/enrichment.ts`. Sorted by id with
+ * repo ids sorted, so the output is deterministic.
+ */
+export function conceptNodes(
+  enrichment: ReadonlyMap<string, Pick<Enrichment, "concepts">>,
+  repoIds: Iterable<string>,
+  minRepos: number = MIN_CONCEPT_REPOS,
+): ConceptNode[] {
+  const byConcept = new Map<string, Set<string>>();
+  for (const id of repoIds) {
+    for (const concept of enrichment.get(id)?.concepts ?? []) {
+      if (concept === "") continue;
+      let repos = byConcept.get(concept);
+      if (!repos) byConcept.set(concept, (repos = new Set()));
+      repos.add(id);
+    }
+  }
+  const out: ConceptNode[] = [];
+  for (const [concept, repos] of byConcept) {
+    if (repos.size < minRepos) continue;
+    out.push({
+      id: `concept:${concept}`,
+      label: concept,
+      repos: [...repos].sort(byId),
+    });
+  }
+  return out.sort((a, b) => byId(a.id, b.id));
+}
 
 /** Directed mentions: README of each repo → starred repos it links to. */
 export function detectMentions(
@@ -360,6 +404,9 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
     color: c.color,
     size: c.members.length,
   }));
+  const concepts = input.enrichment
+    ? conceptNodes(input.enrichment, ids)
+    : [];
 
   const graph: GraphFile = {
     version: GRAPH_FILE_VERSION,
@@ -376,6 +423,7 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
           ),
         }
       : {}),
+    ...(concepts.length > 0 ? { concepts } : {}),
   };
   return {
     graph,
@@ -392,6 +440,7 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
       isolated: nodes.filter((n) => n.metrics.degree === 0).length,
       clusters: clusters.filter((c) => c.id !== UNCLUSTERED_ID).length,
       unclustered: nodes.filter((n) => n.cluster === UNCLUSTERED_ID).length,
+      concepts: concepts.length,
     },
   };
 }

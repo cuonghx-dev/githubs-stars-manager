@@ -9,7 +9,7 @@ import { readThemePreference, writeThemePreference } from "@/lib/theme";
 // Scope: selection, hover, filters, active view, theme preference and the
 // "random walk" history. Later M3 tasks fill in behaviour on top of this:
 // focus mode (T3.3), filters UI (T3.7), cluster view (T3.8), theme (T3.9),
-// path finder (T4.6).
+// path finder (T4.6), concept layer toggle (T5.7).
 
 export type ViewId =
   "graph" | "clusters" | "bridges" | "forgotten" | "dupes" | "path";
@@ -80,6 +80,8 @@ export interface AppState {
    * The canvas highlights it only while the Path view is open.
    */
   pathNodes: readonly string[] | null;
+  /** Whether the enrichment concept layer is drawn on the canvas (FR-73). */
+  showConcepts: boolean;
 
   /**
    * Select a node (or clear with null). A new node is pushed after the
@@ -109,6 +111,7 @@ export interface AppState {
   setShortcutsOpen: (open: boolean) => void;
   setPathEnds: (patch: { from?: string | null; to?: string | null }) => void;
   setPathNodes: (nodes: readonly string[] | null) => void;
+  setShowConcepts: (show: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()((set, get) => ({
@@ -127,6 +130,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   pathFrom: null,
   pathTo: null,
   pathNodes: null,
+  showConcepts: false,
 
   select: (node) => {
     if (node === get().selectedNode) return;
@@ -173,6 +177,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       pathTo: to === undefined ? s.pathTo : to,
     })),
   setPathNodes: (pathNodes) => set({ pathNodes }),
+  setShowConcepts: (showConcepts) => set({ showConcepts }),
 }));
 
 /** Move the walk cursor by `delta` and select that node, if any. */
