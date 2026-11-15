@@ -16,6 +16,13 @@
 // words are already covered by a chosen term (e.g. "learning" after
 // "machine-learning") is skipped, so labels do not repeat themselves.
 //
+// Enrichment (T5.4): when at least half of a cluster's members carry
+// enrichment `concepts`, the label is built from concepts instead. Each
+// cluster's concept document holds every enriched member's concepts (count 1
+// per member); concepts are scored with the same tf × idf, where idf runs over
+// the concept documents of all real clusters. A cluster whose concepts yield no
+// usable term keeps its TF-IDF label.
+//
 // Deterministic: ties break by term asc, so same input → same labels.
 
 import { UNCLUSTERED_ID, UNCLUSTERED_LABEL } from "./clusters.ts";
@@ -243,6 +250,8 @@ export const GENERIC_TERMS: ReadonlySet<string> = new Set([
 export interface LabelSource {
   topics: readonly string[];
   description?: string | null;
+  /** Normalised enrichment concepts (data/enrichment.json), when enriched. */
+  concepts?: readonly string[];
 }
 
 export interface LabelCluster {
@@ -292,6 +301,58 @@ function clusterDocument(
   return counts;
 }
 
+/** Concept counts of one cluster document; also the enriched member count. */
+function conceptDocument(
+  members: readonly string[],
+  sources: ReadonlyMap<string, LabelSource>,
+): { counts: Map<string, number>; enriched: number } {
+  const counts = new Map<string, number>();
+  let enriched = 0;
+  for (const id of members) {
+    const concepts = sources.get(id)?.concepts;
+    if (!concepts || concepts.length === 0) continue;
+    enriched += 1;
+    for (const concept of new Set(
+      concepts.map((c) => c.trim().toLowerCase()),
+    )) {
+      if (concept.length === 0 || isNoise(concept)) continue;
+      counts.set(concept, (counts.get(concept) ?? 0) + 1);
+    }
+  }
+  return { counts, enriched };
+}
+
+/** Document frequency of every term over `docs`. */
+function documentFrequency(
+  docs: readonly Map<string, number>[],
+): Map<string, number> {
+  const df = new Map<string, number>();
+  for (const doc of docs) {
+    for (const term of doc.keys()) df.set(term, (df.get(term) ?? 0) + 1);
+  }
+  return df;
+}
+
+/** Top `LABEL_TERMS` terms of `doc` by tf × idf; empty when nothing usable. */
+function topTerms(
+  doc: ReadonlyMap<string, number>,
+  df: ReadonlyMap<string, number>,
+  n: number,
+): string[] {
+  let length = 0;
+  for (const count of doc.values()) length += count;
+  if (length === 0) return [];
+  const scored = [...doc].map(([term, count]) => {
+    const idf = Math.log((1 + n) / (1 + df.get(term)!)) + 1;
+    return { term, score: (count / length) * idf };
+  });
+  scored.sort((a, b) => b.score - a.score || byTerm(a.term, b.term));
+  return pickTerms(
+    scored.map((s) => s.term),
+    LABEL_TERMS,
+  );
+}
+
 /**
  * Words of a term for the coverage check: split on "-", "_" and spaces, with a
  * trailing plural "s" folded so "agent" counts as covered by "ai-agents".
@@ -321,36 +382,30 @@ function pickTerms(ranked: readonly string[], n: number): string[] {
 }
 
 /**
- * Label for every cluster id. Real clusters with no usable terms fall back to
- * `Cluster <id + 1>`; -1 is always "Unclustered".
+ * Label for every cluster id. Clusters with ≥ half their members enriched are
+ * labelled from concepts, others from topics + descriptions. Real clusters with
+ * no usable terms fall back to `Cluster <id + 1>`; -1 is always "Unclustered".
  */
 export function clusterLabels(
   clusters: readonly LabelCluster[],
   sources: ReadonlyMap<string, LabelSource>,
 ): Map<number, string> {
   const real = clusters.filter((c) => c.id !== UNCLUSTERED_ID);
+  const n = real.length;
   const docs = real.map((c) => clusterDocument(c.members, sources));
-
-  const df = new Map<string, number>();
-  for (const doc of docs) {
-    for (const term of doc.keys()) df.set(term, (df.get(term) ?? 0) + 1);
-  }
-  const n = docs.length;
+  const df = documentFrequency(docs);
+  const conceptDocs = real.map((c) => conceptDocument(c.members, sources));
+  const conceptDf = documentFrequency(conceptDocs.map((d) => d.counts));
 
   const labels = new Map<number, string>();
   real.forEach((cluster, i) => {
-    const doc = docs[i]!;
-    let length = 0;
-    for (const count of doc.values()) length += count;
-    const scored = [...doc].map(([term, count]) => {
-      const idf = Math.log((1 + n) / (1 + df.get(term)!)) + 1;
-      return { term, score: (count / length) * idf };
-    });
-    scored.sort((a, b) => b.score - a.score || byTerm(a.term, b.term));
-    const terms = pickTerms(
-      scored.map((s) => s.term),
-      LABEL_TERMS,
-    );
+    const concept = conceptDocs[i]!;
+    // Enrichment overrides once at least half the members are enriched.
+    let terms =
+      concept.enriched > 0 && concept.enriched * 2 >= cluster.members.length
+        ? topTerms(concept.counts, conceptDf, n)
+        : [];
+    if (terms.length === 0) terms = topTerms(docs[i]!, df, n);
     labels.set(
       cluster.id,
       terms.length > 0

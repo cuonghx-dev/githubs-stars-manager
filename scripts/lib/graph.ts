@@ -7,7 +7,8 @@
 // (dense cosine over all pairs, T2.2). Pruning streams candidates through a
 // per-node top-k heap, so memory stays O(n·k) even for all n² pairs. Clusters
 // come from seeded Louvain over the kept edges (FR-24, `lib/clusters.ts`);
-// labels are the top TF-IDF terms per cluster (FR-25, `lib/tfidf.ts`). x/y
+// labels are the top TF-IDF terms per cluster, from enrichment concepts when at
+// least half the members are enriched (FR-25, T5.4, `lib/tfidf.ts`). x/y
 // come from the seeded ForceAtlas2 layout (FR-27). Manual edges and tags from
 // data/manual.yaml (FR-9, FR-29) are forced, with weight max(w, 0.5). Output order is deterministic (nodes by
 // id, edges by `(source, target)` with `source < target`); rounding and schema
@@ -342,7 +343,16 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
   );
   const labels = clusterLabels(
     clustering.clusters,
-    new Map(repos.map((r) => [r.nameWithOwner, r])),
+    new Map(
+      repos.map((r) => [
+        r.nameWithOwner,
+        {
+          topics: r.topics,
+          description: r.description,
+          concepts: input.enrichment?.get(r.nameWithOwner)?.concepts,
+        },
+      ]),
+    ),
   );
   const clusters: Cluster[] = clustering.clusters.map((c) => ({
     id: c.id,
