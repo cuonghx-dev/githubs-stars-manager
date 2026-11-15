@@ -20,20 +20,27 @@ import {
   isOnlyCluster,
   toggleClusterFilter,
 } from "@/features/detail/repo-details";
+import type { SimilarRepo } from "@/features/detail/reasons";
+import { SimilarList } from "@/features/detail/SimilarList";
 import type { Cluster, RepoNode } from "@/lib/graph-schema";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 // Repo detail panel (T3.4): metadata and links (FR-40), README excerpt
 // (FR-41) and a cluster chip that filters the graph to that cluster (FR-43).
-// "Similar repos" (FR-42, T3.5) and enrichment (FR-44, T5.6) slot in below.
+// "Similar repos" (FR-42, T3.5) follow; enrichment (FR-44, T5.6) slots in later.
 
 interface DetailPanelProps {
   repo: RepoNode;
   clusters: readonly Cluster[];
+  similar?: readonly SimilarRepo[];
 }
 
-export function DetailPanel({ repo, clusters }: DetailPanelProps) {
+export function DetailPanel({
+  repo,
+  clusters,
+  similar = [],
+}: DetailPanelProps) {
   const homepage = homepageHref(repo.homepage);
   return (
     <article className="flex flex-col gap-4 text-sm" aria-label={repo.id}>
@@ -129,6 +136,8 @@ export function DetailPanel({ repo, clusters }: DetailPanelProps) {
           </p>
         </section>
       )}
+
+      <SimilarList items={similar} />
     </article>
   );
 }

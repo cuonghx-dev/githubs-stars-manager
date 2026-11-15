@@ -2,6 +2,7 @@ import { LoaderCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/app/AppShell";
 import { DetailPanel } from "@/features/detail/DetailPanel";
+import { buildSimilarIndex } from "@/features/detail/reasons";
 import { GraphCanvas } from "@/features/graph/GraphCanvas";
 import { formatFreshness } from "@/lib/format";
 import {
@@ -45,6 +46,10 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
     () => new Map(data.nodes.map((n) => [n.id, n])),
     [data.nodes],
   );
+  const similarIndex = useMemo(
+    () => buildSimilarIndex(data.nodes, data.edges),
+    [data.nodes, data.edges],
+  );
   const selectedNode = useAppStore((s) => s.selectedNode);
   const repo = selectedNode === null ? undefined : repoById.get(selectedNode);
 
@@ -66,7 +71,12 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
       freshnessTitle={data.generatedAt}
       detail={
         repo ? (
-          <DetailPanel key={repo.id} repo={repo} clusters={data.clusters} />
+          <DetailPanel
+            key={repo.id}
+            repo={repo}
+            clusters={data.clusters}
+            similar={similarIndex.get(repo.id) ?? []}
+          />
         ) : null
       }
       detailOpen={detailOpen}
