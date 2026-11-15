@@ -14,13 +14,20 @@ const colors = { node: "#ffffff", edge: "#f5f5f5", dimEdge: "#cccccc" };
 function makeGraph(): RepoGraph {
   const g: RepoGraph = new UndirectedGraph();
   for (const id of ["a", "b", "c", "d", "e", "f"]) {
-    g.addNode(id, { x: 0, y: 0, size: 1, color: "#000000", label: id });
+    g.addNode(id, {
+      x: 0,
+      y: 0,
+      size: 1,
+      color: "#000000",
+      label: id,
+      archived: false,
+    });
   }
-  g.addEdgeWithKey("ab", "a", "b", { size: 1, weight: 1 });
-  g.addEdgeWithKey("bc", "b", "c", { size: 1, weight: 1 });
-  g.addEdgeWithKey("cd", "c", "d", { size: 1, weight: 1 });
-  g.addEdgeWithKey("de", "d", "e", { size: 1, weight: 1 });
-  g.addEdgeWithKey("bf", "b", "f", { size: 1, weight: 1 });
+  g.addEdgeWithKey("ab", "a", "b", { size: 1, weight: 1, kind: "similarity" });
+  g.addEdgeWithKey("bc", "b", "c", { size: 1, weight: 1, kind: "similarity" });
+  g.addEdgeWithKey("cd", "c", "d", { size: 1, weight: 1, kind: "similarity" });
+  g.addEdgeWithKey("de", "d", "e", { size: 1, weight: 1, kind: "similarity" });
+  g.addEdgeWithKey("bf", "b", "f", { size: 1, weight: 1, kind: "similarity" });
   return g;
 }
 
@@ -34,7 +41,11 @@ describe("computeFocus", () => {
 
   it("keeps the focus node and 1-hop nodes out of the 2-hop ring", () => {
     const g = makeGraph();
-    g.addEdgeWithKey("ac", "a", "c", { size: 1, weight: 1 });
+    g.addEdgeWithKey("ac", "a", "c", {
+      size: 1,
+      weight: 1,
+      kind: "similarity",
+    });
     const f = computeFocus(g, "a");
     expect([...f!.hop1].sort()).toEqual(["b", "c"]);
     expect([...f!.hop2].sort()).toEqual(["d", "f"]);

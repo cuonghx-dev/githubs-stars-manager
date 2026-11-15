@@ -17,6 +17,9 @@ importers:
       '@react-sigma/core':
         specifier: ^6.0.0
         version: 6.0.0(graphology@0.26.0(graphology-types@0.24.8))(react@19.3.1)(sigma@4.0.6(graphology-types@0.24.8))
+      '@sigma/node-border':
+        specifier: ^4.0.0
+        version: 4.0.0(sigma@4.0.6(graphology-types@0.24.8))
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1561,6 +1564,11 @@ packages:
   '@shadcn/registry@0.2.1':
     resolution: {integrity: sha512-wMvZ3DGdnhCwtpeFbwKybSGfCcP52bZX77jMKgZvupmirgyA5KRLlkeQXkI2RGHIaD8TX2iWe2wcIEjjqzg2FQ==}
     engines: {node: '>=20.18.1'}
+
+  '@sigma/node-border@4.0.0':
+    resolution: {integrity: sha512-4/HuHrflTRqJvnLg/3dW4zU46fg84Hb+Yd7EGkQshH9PQuKm6nD9CjWhman+3c74bK3B+mfog/q9g/MIjbnobA==}
+    peerDependencies:
+      sigma: ^4.0.0
 
   '@sindresorhus/merge-streams@4.0.0':
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
@@ -4725,6 +4733,10 @@ snapshots:
       zod: 4.6.7
     transitivePeerDependencies:
       - supports-color
+
+  '@sigma/node-border@4.0.0(sigma@4.0.6(graphology-types@0.24.8))':
+    dependencies:
+      sigma: 4.0.6(graphology-types@0.24.8)
 
   '@sindresorhus/merge-streams@4.0.0': {}
 

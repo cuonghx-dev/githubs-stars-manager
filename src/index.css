@@ -88,6 +88,10 @@
   --graph-node-faded: #e5e5e5;
   --graph-edge-faded: rgba(115, 115, 115, 0.08);
   --graph-edge-dimmed: rgba(115, 115, 115, 0.18);
+  /* Edge kinds (T4.4, FR-35) and the inner fill of archived nodes (FR-36). */
+  --graph-edge-mention: rgba(217, 119, 6, 0.6);
+  --graph-edge-dependency: rgba(37, 99, 235, 0.6);
+  --graph-node-hollow: #ffffff;
 }
 
 .dark {
@@ -127,6 +131,9 @@
   --graph-node-faded: #3f3f46;
   --graph-edge-faded: rgba(163, 163, 163, 0.06);
   --graph-edge-dimmed: rgba(163, 163, 163, 0.15);
+  --graph-edge-mention: rgba(251, 191, 36, 0.55);
+  --graph-edge-dependency: rgba(96, 165, 250, 0.55);
+  --graph-node-hollow: #0a0a0a;
 }
 
 @layer base {

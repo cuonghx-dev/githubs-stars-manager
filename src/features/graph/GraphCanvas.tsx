@@ -18,6 +18,13 @@ import {
   type FadeColors,
   type Highlight,
 } from "@/features/graph/highlight";
+import {
+  archivedNodeStyle,
+  edgeKindStyle,
+  GRAPH_PRIMITIVES,
+  type HollowColors,
+  type KindColors,
+} from "@/features/graph/styles";
 import type { Cluster, RepoNode } from "@/lib/graph-schema";
 import {
   filtersActive,
@@ -46,9 +53,8 @@ import type {
 // (handled by the global shortcuts, T3.10).
 // A hover highlight takes precedence over focus while the pointer is on a node.
 
-interface Palette extends FadeColors, FocusColors {
+interface Palette extends FadeColors, FocusColors, KindColors, HollowColors {
   label: string;
-  edgeColor: string;
 }
 
 // Fallbacks if the CSS tokens are missing; the real values live in
@@ -59,6 +65,9 @@ const FALLBACK: Palette = {
   node: "#e5e5e5",
   edge: "rgba(115, 115, 115, 0.08)",
   dimEdge: "rgba(115, 115, 115, 0.18)",
+  mentionEdge: "rgba(217, 119, 6, 0.6)",
+  dependencyEdge: "rgba(37, 99, 235, 0.6)",
+  hollow: "#ffffff",
 };
 
 /** Reads the sigma palette from the CSS tokens of the active theme. */
@@ -72,6 +81,9 @@ function currentPalette(): Palette {
     node: token("--graph-node-faded", FALLBACK.node),
     edge: token("--graph-edge-faded", FALLBACK.edge),
     dimEdge: token("--graph-edge-dimmed", FALLBACK.dimEdge),
+    mentionEdge: token("--graph-edge-mention", FALLBACK.mentionEdge),
+    dependencyEdge: token("--graph-edge-dependency", FALLBACK.dependencyEdge),
+    hollow: token("--graph-node-hollow", FALLBACK.hollow),
   };
 }
 
@@ -84,6 +96,10 @@ const FIT_PADDING = 1.25;
 const FIT_MIN_RATIO = 0.08;
 
 type Options = Partial<SigmaOptions<NodeAttributes, EdgeAttributes>>;
+
+// Edge kinds (FR-35) and hollow archived nodes (FR-36) come from styles.ts:
+// the reducers apply the kind colour/path and the hollow ring first, so the
+// hover, focus and filter fades still override the colour on top.
 
 /** Mirror of the store slices the reducers read; mutated, never rendered. */
 interface CanvasState {
@@ -114,20 +130,23 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
 
   const options = useMemo<Options>(
     () => ({
+      primitives: GRAPH_PRIMITIVES,
       settings: {
         hideEdgesOnMove: graph.size > 2000,
         labelRenderedSizeThreshold: 8,
       },
-      nodeReducer: (key, data) => {
+      nodeReducer: (key, data, attrs) => {
         const palette = paletteRef.current;
         const { highlight, selected, focus, filteredOut, filterMode } =
           stateRef.current;
+        const hollow = archivedNodeStyle(attrs.archived, palette);
         if (filteredOut?.has(key) && key !== selected) {
           return filterMode === "hide"
             ? { visibility: "hidden" }
-            : { color: palette.node, labelVisibility: "hidden" };
+            : { ...hollow, color: palette.node, labelVisibility: "hidden" };
         }
         return {
+          ...hollow,
           labelColor: palette.label,
           ...(highlight !== null
             ? nodeHighlightStyle(key, highlight, palette)
@@ -135,20 +154,21 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
           ...selectionStyle(key, selected),
         };
       },
-      edgeReducer: (key) => {
+      edgeReducer: (key, _data, attrs) => {
         const palette = paletteRef.current;
         const { highlight, focus, filteredOut, filterMode } = stateRef.current;
+        const base = edgeKindStyle(attrs.kind, palette);
         if (filteredOut === null && highlight === null && focus === null) {
-          return { color: palette.edgeColor };
+          return base;
         }
         const [source, target] = graph.extremities(key);
         if (filteredOut?.has(source) || filteredOut?.has(target)) {
           return filterMode === "hide"
             ? { visibility: "hidden" }
-            : { color: palette.edge };
+            : { ...base, color: palette.edge };
         }
         return {
-          color: palette.edgeColor,
+          ...base,
           ...(highlight !== null
             ? edgeHighlightStyle(key, highlight, palette)
             : edgeFocusStyle(source, target, focus, palette)),

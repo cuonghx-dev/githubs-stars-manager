@@ -12,11 +12,30 @@ const fade = { node: "#eee", edge: "#f5f5f5" };
 function makeGraph(): RepoGraph {
   const g: RepoGraph = new UndirectedGraph();
   for (const id of ["a/a", "b/b", "c/c", "d/d"]) {
-    g.addNode(id, { x: 0, y: 0, size: 1, color: "#000", label: id });
+    g.addNode(id, {
+      x: 0,
+      y: 0,
+      size: 1,
+      color: "#000",
+      label: id,
+      archived: false,
+    });
   }
-  g.addEdgeWithKey("ab", "a/a", "b/b", { size: 1, weight: 1 });
-  g.addEdgeWithKey("bc", "b/b", "c/c", { size: 1, weight: 1 });
-  g.addEdgeWithKey("cd", "c/c", "d/d", { size: 1, weight: 1 });
+  g.addEdgeWithKey("ab", "a/a", "b/b", {
+    size: 1,
+    weight: 1,
+    kind: "similarity",
+  });
+  g.addEdgeWithKey("bc", "b/b", "c/c", {
+    size: 1,
+    weight: 1,
+    kind: "similarity",
+  });
+  g.addEdgeWithKey("cd", "c/c", "d/d", {
+    size: 1,
+    weight: 1,
+    kind: "similarity",
+  });
   return g;
 }
 

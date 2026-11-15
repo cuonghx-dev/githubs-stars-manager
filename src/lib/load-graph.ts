@@ -2,6 +2,7 @@ import { UndirectedGraph } from "graphology";
 import {
   parseGraphFile,
   type Cluster,
+  type EdgeSignals,
   type GraphFile,
   type RepoEdge,
   type RepoNode,
@@ -25,11 +26,20 @@ export interface NodeAttributes {
   size: number;
   color: string;
   label: string;
+  /** Archived repos render hollow (FR-36). */
+  archived: boolean;
 }
+
+/**
+ * Edge style class (FR-35). Dependency wins over mention when both signals
+ * are set; everything else is a plain similarity edge.
+ */
+export type EdgeKind = "similarity" | "mention" | "dependency";
 
 export interface EdgeAttributes {
   size: number;
   weight: number;
+  kind: EdgeKind;
 }
 
 export type RepoGraph = UndirectedGraph<NodeAttributes, EdgeAttributes>;
@@ -64,6 +74,13 @@ export function edgeSize(weight: number): number {
   return min + (max - min) * Math.min(1, Math.max(0, weight));
 }
 
+/** Style class of an edge from its signals (FR-35). */
+export function edgeKind(signals: EdgeSignals): EdgeKind {
+  if (signals.dependency) return "dependency";
+  if (signals.mention) return "mention";
+  return "similarity";
+}
+
 /** Build the graphology instance and lookup maps from a validated file. */
 export function buildRepoGraph(data: GraphFile): LoadedGraph {
   const clustersById = new Map(data.clusters.map((c) => [c.id, c]));
@@ -78,6 +95,7 @@ export function buildRepoGraph(data: GraphFile): LoadedGraph {
       size: nodeSize(node.stars, maxStars),
       color: clustersById.get(node.cluster)?.color ?? FALLBACK_NODE_COLOR,
       label: node.id,
+      archived: node.isArchived,
     });
   }
   for (const edge of data.edges) addEdge(graph, edge);
@@ -88,11 +106,15 @@ export function buildRepoGraph(data: GraphFile): LoadedGraph {
 // Edges whose endpoints are unknown, self-loops and duplicates are skipped:
 // the schema cannot express referential integrity, and graphology throws.
 function addEdge(graph: RepoGraph, edge: RepoEdge): void {
-  const { source, target, weight } = edge;
+  const { source, target, weight, signals } = edge;
   if (source === target) return;
   if (!graph.hasNode(source) || !graph.hasNode(target)) return;
   if (graph.hasEdge(source, target)) return;
-  graph.addEdge(source, target, { size: edgeSize(weight), weight });
+  graph.addEdge(source, target, {
+    size: edgeSize(weight),
+    weight,
+    kind: edgeKind(signals),
+  });
 }
 
 /** Default location of the graph file, relative to Vite's `base` (NFR-7). */
