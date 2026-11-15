@@ -1,4 +1,4 @@
-import type { Cluster } from "@/lib/graph-schema";
+import type { Cluster, EnrichmentCategory } from "@/lib/graph-schema";
 
 // Pure helpers for the repo detail panel (T3.4, FR-40/FR-41/FR-43). Kept out
 // of the component so they can be unit-tested without a DOM.
@@ -78,4 +78,20 @@ export function toggleClusterFilter(
   id: number,
 ): number[] {
   return isOnlyCluster(filterClusters, id) ? [] : [id];
+}
+
+const CATEGORY_LABELS: Record<EnrichmentCategory, string> = {
+  library: "Library",
+  framework: "Framework",
+  tool: "Tool",
+  app: "App",
+  "awesome-list": "Awesome list",
+  learning: "Learning",
+  dataset: "Dataset",
+  other: "Other",
+};
+
+/** Display label for an enrichment category (FR-44), e.g. "awesome-list" → "Awesome list". */
+export function categoryLabel(category: EnrichmentCategory): string {
+  return CATEGORY_LABELS[category];
 }

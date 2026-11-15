@@ -7,12 +7,14 @@ import {
   GitFork,
   Globe,
   Scale,
+  Sparkles,
   Star,
   Tag,
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import {
+  categoryLabel,
   findCluster,
   formatCount,
   formatDate,
@@ -23,13 +25,15 @@ import {
 } from "@/features/detail/repo-details";
 import type { SimilarRepo } from "@/features/detail/reasons";
 import { SimilarList } from "@/features/detail/SimilarList";
-import type { Cluster, RepoNode } from "@/lib/graph-schema";
+import type { Cluster, Enrichment, RepoNode } from "@/lib/graph-schema";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 // Repo detail panel (T3.4): metadata and links (FR-40), README excerpt
-// (FR-41), user tags from data/manual.yaml (FR-9) and a cluster chip that filters the graph to that cluster (FR-43).
-// "Similar repos" (FR-42, T3.5) follow; enrichment (FR-44, T5.6) slots in later.
+// (FR-41), user tags from data/manual.yaml (FR-9), a cluster chip that filters
+// the graph to that cluster (FR-43), "Similar repos" (FR-42, T3.5) and, when
+// data/enrichment.json covers the repo, its summary, category and concepts
+// (FR-44, T5.6).
 
 interface DetailPanelProps {
   repo: RepoNode;
@@ -65,6 +69,8 @@ export function DetailPanel({
           )}
         </div>
       </header>
+
+      {repo.enrichment && <EnrichmentSection enrichment={repo.enrichment} />}
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
         <Fact icon={Star} label="Stars">
@@ -156,6 +162,42 @@ export function DetailPanel({
 
       <SimilarList items={similar} />
     </article>
+  );
+}
+
+function EnrichmentSection({ enrichment }: { enrichment: Enrichment }) {
+  const summary = enrichment.summary.trim();
+  return (
+    <section
+      className="flex flex-col gap-2 rounded-md border bg-muted/40 p-2.5"
+      aria-label="Enrichment"
+    >
+      <div className="flex flex-wrap items-center gap-1.5">
+        <h3 className="flex items-center gap-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          <Sparkles className="size-3" aria-hidden="true" />
+          Summary
+        </h3>
+        <span
+          className="rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-xs font-medium"
+          title="Category"
+        >
+          {categoryLabel(enrichment.category)}
+        </span>
+      </div>
+      {summary && <p className="leading-relaxed break-words">{summary}</p>}
+      {enrichment.concepts.length > 0 && (
+        <ul className="flex flex-wrap gap-1" aria-label="Concepts">
+          {enrichment.concepts.map((concept) => (
+            <li
+              key={concept}
+              className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground"
+            >
+              {concept}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
