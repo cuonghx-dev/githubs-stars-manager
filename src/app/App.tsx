@@ -1,6 +1,7 @@
 import { LoaderCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/app/AppShell";
+import { DetailPanel } from "@/features/detail/DetailPanel";
 import { GraphCanvas } from "@/features/graph/GraphCanvas";
 import { formatFreshness } from "@/lib/format";
 import {
@@ -8,6 +9,7 @@ import {
   type LoadedGraph,
   type LoadGraphResult,
 } from "@/lib/load-graph";
+import { useAppStore } from "@/lib/store";
 
 // App entry: loading → graph inside the PRD §6 shell (T3.1), or the
 // empty/error state when graph.json is missing or invalid (FR-37, PRD §6 states).
@@ -39,10 +41,36 @@ export function App() {
 
 function GraphView({ loaded }: { loaded: LoadedGraph }) {
   const { data, graph } = loaded;
+  const repoById = useMemo(
+    () => new Map(data.nodes.map((n) => [n.id, n])),
+    [data.nodes],
+  );
+  const selectedNode = useAppStore((s) => s.selectedNode);
+  const repo = selectedNode === null ? undefined : repoById.get(selectedNode);
+
+  // Narrow screens: selecting a node opens the detail bottom sheet (FR-34).
+  const [detailOpen, setDetailOpen] = useState(false);
+  useEffect(
+    () =>
+      useAppStore.subscribe((s, prev) => {
+        if (s.selectedNode !== null && s.selectedNode !== prev.selectedNode) {
+          setDetailOpen(true);
+        }
+      }),
+    [],
+  );
+
   return (
     <AppShell
       freshness={formatFreshness(data.generatedAt, data.nodes.length)}
       freshnessTitle={data.generatedAt}
+      detail={
+        repo ? (
+          <DetailPanel key={repo.id} repo={repo} clusters={data.clusters} />
+        ) : null
+      }
+      detailOpen={detailOpen}
+      onDetailOpenChange={setDetailOpen}
     >
       <GraphCanvas graph={graph} clusters={data.clusters} nodes={data.nodes} />
     </AppShell>
