@@ -54,7 +54,7 @@ const VIEWS: readonly ViewItem[] = [
   { id: "graph", label: "Graph", icon: Network, available: true },
   { id: "clusters", label: "Clusters", icon: Shapes, available: true },
   { id: "bridges", label: "Bridges", icon: Waypoints, available: true },
-  { id: "forgotten", label: "Forgotten", icon: Clock, available: false },
+  { id: "forgotten", label: "Forgotten", icon: Clock, available: true },
   { id: "dupes", label: "Dupes", icon: Copy, available: false },
   { id: "path", label: "Path", icon: Route, available: true },
 ];

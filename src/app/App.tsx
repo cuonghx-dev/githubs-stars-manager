@@ -4,6 +4,7 @@ import { AppShell } from "@/app/AppShell";
 import { BridgesView } from "@/features/bridges/BridgesView";
 import { ClusterOverview } from "@/features/clusters/ClusterOverview";
 import { DetailPanel } from "@/features/detail/DetailPanel";
+import { ForgottenView } from "@/features/forgotten/ForgottenView";
 import { FilterBar, NoResults } from "@/features/filters/FilterBar";
 import { buildSimilarIndex } from "@/features/detail/reasons";
 import { GraphCanvas } from "@/features/graph/GraphCanvas";
@@ -119,6 +120,7 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
           edges={data.edges}
         />
       )}
+      {view === "forgotten" && <ForgottenView nodes={data.nodes} />}
       {view === "path" && (
         <PathView graph={graph} nodes={data.nodes} edges={data.edges} />
       )}
