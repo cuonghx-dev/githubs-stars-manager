@@ -12,6 +12,14 @@ import {
   type Highlight,
 } from "@/features/graph/highlight";
 import type { Cluster, RepoNode } from "@/lib/graph-schema";
+import {
+  filtersActive,
+  matchesFilters,
+  useAppStore,
+  type AppState,
+  type FilterMode,
+  type Filters,
+} from "@/lib/store";
 import type {
   EdgeAttributes,
   NodeAttributes,
@@ -19,11 +27,12 @@ import type {
 } from "@/lib/load-graph";
 
 // Sigma canvas (FR-30..FR-33). Positions and cluster colours come precomputed
-// from build-graph; sigma only renders, pans and zooms. Hover and selection
-// live in refs that the reducers read, so neither re-renders React. Node
-// labels show once a node is large enough on screen (sigma's label threshold,
-// i.e. on zoom), on hover, and on selection; cluster labels sit at centroids
-// while zoomed out (FR-32).
+// from build-graph; sigma only renders, pans and zooms. Hover, selection and
+// filters live in the zustand store (T3.2); a store subscription mirrors them
+// into a ref that the reducers read and calls sigma.refresh(), so none of it
+// re-renders React. Node labels show once a node is large enough on screen
+// (sigma's label threshold, i.e. on zoom), on hover, and on selection; cluster
+// labels sit at centroids while zoomed out (FR-32).
 
 interface Palette extends FadeColors {
   label: string;
@@ -50,6 +59,15 @@ function currentPalette(): Palette {
 
 type Options = Partial<SigmaOptions<NodeAttributes, EdgeAttributes>>;
 
+/** Mirror of the store slices the reducers read; mutated, never rendered. */
+interface CanvasState {
+  highlight: Highlight | null;
+  selected: string | null;
+  /** Nodes that fail the filters; null when no filter is active. */
+  filteredOut: ReadonlySet<string> | null;
+  filterMode: FilterMode;
+}
+
 interface GraphCanvasProps {
   graph: RepoGraph;
   clusters: readonly Cluster[];
@@ -57,8 +75,12 @@ interface GraphCanvasProps {
 }
 
 export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
-  const highlightRef = useRef<Highlight | null>(null);
-  const selectedRef = useRef<string | null>(null);
+  const stateRef = useRef<CanvasState>({
+    highlight: null,
+    selected: null,
+    filteredOut: null,
+    filterMode: "fade",
+  });
   const paletteRef = useRef<Palette>(LIGHT);
 
   const options = useMemo<Options>(
@@ -69,17 +91,33 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
       },
       nodeReducer: (key) => {
         const palette = paletteRef.current;
+        const { highlight, selected, filteredOut, filterMode } =
+          stateRef.current;
+        if (filteredOut?.has(key) && key !== selected) {
+          return filterMode === "hide"
+            ? { visibility: "hidden" }
+            : { color: palette.node, labelVisibility: "hidden" };
+        }
         return {
           labelColor: palette.label,
-          ...nodeHighlightStyle(key, highlightRef.current, palette),
-          ...selectionStyle(key, selectedRef.current),
+          ...nodeHighlightStyle(key, highlight, palette),
+          ...selectionStyle(key, selected),
         };
       },
       edgeReducer: (key) => {
         const palette = paletteRef.current;
+        const { highlight, filteredOut, filterMode } = stateRef.current;
+        if (filteredOut !== null) {
+          const [source, target] = graph.extremities(key);
+          if (filteredOut.has(source) || filteredOut.has(target)) {
+            return filterMode === "hide"
+              ? { visibility: "hidden" }
+              : { color: palette.edge };
+          }
+        }
         return {
           color: palette.edgeColor,
-          ...edgeHighlightStyle(key, highlightRef.current, palette),
+          ...edgeHighlightStyle(key, highlight, palette),
         };
       },
     }),
@@ -94,8 +132,8 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
     >
       <GraphEvents
         graph={graph}
-        highlightRef={highlightRef}
-        selectedRef={selectedRef}
+        nodes={nodes}
+        stateRef={stateRef}
         paletteRef={paletteRef}
       />
       <ClusterLabels clusters={clusters} nodes={nodes} />
@@ -103,42 +141,70 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
   );
 }
 
+function computeFilteredOut(
+  nodes: readonly RepoNode[],
+  filters: Filters,
+): ReadonlySet<string> | null {
+  if (!filtersActive(filters)) return null;
+  const out = new Set<string>();
+  for (const repo of nodes) {
+    if (!matchesFilters(repo, filters)) out.add(repo.id);
+  }
+  return out;
+}
+
 function GraphEvents({
   graph,
-  highlightRef,
-  selectedRef,
+  nodes,
+  stateRef,
   paletteRef,
 }: {
   graph: RepoGraph;
-  highlightRef: React.RefObject<Highlight | null>;
-  selectedRef: React.RefObject<string | null>;
+  nodes: readonly RepoNode[];
+  stateRef: React.RefObject<CanvasState>;
   paletteRef: React.RefObject<Palette>;
 }) {
   const sigma = useSigma<NodeAttributes, EdgeAttributes>();
   const registerEvents = useRegisterEvents();
 
+  // UI → store. Sigma events only write to the store; the subscription below
+  // is the single path from state to the canvas.
   useEffect(() => {
+    const { hover, toggleSelect, select } = useAppStore.getState();
     registerEvents({
-      enterNode: ({ node }) => {
-        highlightRef.current = computeHighlight(graph, node);
-        sigma.refresh({ skipIndexation: true });
-      },
-      leaveNode: () => {
-        highlightRef.current = null;
-        sigma.refresh({ skipIndexation: true });
-      },
-      // Minimal selection for labels; focus mode and the panel come in M3.
-      clickNode: ({ node }) => {
-        selectedRef.current = selectedRef.current === node ? null : node;
-        sigma.refresh({ skipIndexation: true });
-      },
-      clickStage: () => {
-        if (selectedRef.current === null) return;
-        selectedRef.current = null;
-        sigma.refresh({ skipIndexation: true });
-      },
+      enterNode: ({ node }) => hover(node),
+      leaveNode: () => hover(null),
+      clickNode: ({ node }) => toggleSelect(node),
+      clickStage: () => select(null),
     });
-  }, [registerEvents, sigma, graph, highlightRef, selectedRef]);
+  }, [registerEvents]);
+
+  // Store → refs → sigma.refresh(), without re-rendering React.
+  useEffect(() => {
+    const sync = (state: AppState, prev: AppState | null) => {
+      const canvas = stateRef.current;
+      let dirty = false;
+      if (prev === null || state.hoveredNode !== prev.hoveredNode) {
+        canvas.highlight = computeHighlight(graph, state.hoveredNode);
+        dirty = true;
+      }
+      if (prev === null || state.selectedNode !== prev.selectedNode) {
+        canvas.selected =
+          state.selectedNode !== null && graph.hasNode(state.selectedNode)
+            ? state.selectedNode
+            : null;
+        dirty = true;
+      }
+      if (prev === null || state.filters !== prev.filters) {
+        canvas.filteredOut = computeFilteredOut(nodes, state.filters);
+        canvas.filterMode = state.filters.mode;
+        dirty = true;
+      }
+      if (dirty) sigma.refresh({ skipIndexation: true });
+    };
+    sync(useAppStore.getState(), null);
+    return useAppStore.subscribe(sync);
+  }, [sigma, graph, nodes, stateRef]);
 
   // Follow the `dark` class on <html> (set from the system scheme, NFR-8).
   useEffect(() => {

@@ -25,6 +25,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useMediaQuery, WIDE_QUERY } from "@/hooks/use-media-query";
+import { useAppStore, type ViewId } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 // App shell from PRD §6 (T3.1): header (search, filters, theme, freshness),
@@ -33,8 +34,7 @@ import { cn } from "@/lib/utils";
 // becomes a bottom sheet. Search, filters, theme, views other than Graph,
 // and the timeline are placeholders wired up by later M3/M4 tasks.
 
-export type ViewId =
-  "graph" | "clusters" | "bridges" | "forgotten" | "dupes" | "path";
+export type { ViewId };
 
 interface ViewItem {
   id: ViewId;
@@ -77,7 +77,8 @@ export function AppShell({
   onDetailOpenChange,
 }: AppShellProps) {
   const wide = useMediaQuery(WIDE_QUERY);
-  const [view, setView] = useState<ViewId>("graph");
+  const view = useAppStore((s) => s.view);
+  const setView = useAppStore((s) => s.setView);
   const [menuOpen, setMenuOpen] = useState(false);
   const [detailOpenLocal, setDetailOpenLocal] = useState(false);
   const detailOpen = detailOpenProp ?? detailOpenLocal;
