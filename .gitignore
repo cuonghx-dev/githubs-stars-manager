@@ -13,3 +13,21 @@
 
 # Gas City implementation worktrees
 worktrees/
+
+# Dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Pipeline caches and generated data (implementation-plan §2, Q1).
+# Committed: public/graph.json, data/enrichment.json, data/manual.yaml
+data/raw/
+data/embeddings.json
+data/enrich-todo.json
+.cache/
+public/embeddings.bin
+
+# Local env and OS noise
+.env
+.env.local
+.DS_Store
