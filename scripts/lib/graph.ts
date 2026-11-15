@@ -30,7 +30,7 @@ import {
 import { clusterLabels } from "./tfidf.ts";
 import { computeLayout, type LayoutOptions } from "./layout.ts";
 import { buildMentionIndex, findMentions } from "./mentions.ts";
-import { degreeMetrics } from "./metrics.ts";
+import { bridgeMetrics, degreeMetrics } from "./metrics.ts";
 import { TopKPruner } from "./prune.ts";
 import { cleanReadme, excerpt, extractLinks } from "./readme.ts";
 import {
@@ -128,7 +128,12 @@ export function detectMentions(
 export function toRepoNode(
   repo: RawRepo,
   readme: string | undefined,
-  metrics: { degree: number; weightedDegree: number },
+  metrics: {
+    degree: number;
+    weightedDegree: number;
+    betweenness?: number;
+    bridgeScore?: number;
+  },
   position: { x: number; y: number } = { x: 0, y: 0 },
   cluster: number = UNCLUSTERED_ID,
 ): RepoNode {
@@ -163,6 +168,12 @@ export function toRepoNode(
     metrics: {
       degree: metrics.degree,
       weightedDegree: metrics.weightedDegree,
+      ...(metrics.betweenness !== undefined
+        ? { betweenness: metrics.betweenness }
+        : {}),
+      ...(metrics.bridgeScore !== undefined
+        ? { bridgeScore: metrics.bridgeScore }
+        : {}),
     },
   };
   return node;
@@ -255,11 +266,17 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
           { id: UNCLUSTERED_ID, color: UNCLUSTERED_COLOR, members: ids },
         ],
       };
+  const clusterOf = (id: string) =>
+    clustering.assignment.get(id) ?? UNCLUSTERED_ID;
+  const bridges = bridgeMetrics(ids, edges, clusterOf, UNCLUSTERED_ID);
   const nodes = repos.map((repo) =>
     toRepoNode(
       repo,
       input.readmes.get(repo.nameWithOwner),
-      metrics.get(repo.nameWithOwner)!,
+      {
+        ...metrics.get(repo.nameWithOwner)!,
+        ...bridges.get(repo.nameWithOwner)!,
+      },
       positions.get(repo.nameWithOwner),
       clustering.assignment.get(repo.nameWithOwner) ?? UNCLUSTERED_ID,
     ),
