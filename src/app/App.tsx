@@ -4,6 +4,7 @@ import { AppShell } from "@/app/AppShell";
 import { BridgesView } from "@/features/bridges/BridgesView";
 import { ClusterOverview } from "@/features/clusters/ClusterOverview";
 import { DetailPanel } from "@/features/detail/DetailPanel";
+import { DuplicatesView } from "@/features/duplicates/DuplicatesView";
 import { ForgottenView } from "@/features/forgotten/ForgottenView";
 import { FilterBar, NoResults } from "@/features/filters/FilterBar";
 import { buildSimilarIndex } from "@/features/detail/reasons";
@@ -121,6 +122,13 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
         />
       )}
       {view === "forgotten" && <ForgottenView nodes={data.nodes} />}
+      {view === "dupes" && (
+        <DuplicatesView
+          duplicates={data.duplicates ?? []}
+          nodes={data.nodes}
+          clusters={data.clusters}
+        />
+      )}
       {view === "path" && (
         <PathView graph={graph} nodes={data.nodes} edges={data.edges} />
       )}

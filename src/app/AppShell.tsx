@@ -37,8 +37,8 @@ import { nextThemePreference } from "@/lib/theme";
 // becomes a bottom sheet. Search comes in through the `search` slot; filters,
 // views other than Graph, and the timeline are placeholders wired up by
 // later M3/M4 tasks. Filters come in through the `filters` slot (T3.7). The
-// Clusters (T3.8), Bridges (T4.5) and Path (T4.6) views are rendered by App
-// over the canvas.
+// Clusters (T3.8), Bridges (T4.5), Path (T4.6), Forgotten (T4.7) and Dupes
+// (T4.8) views are rendered by App over the canvas.
 
 export type { ViewId };
 
@@ -55,7 +55,7 @@ const VIEWS: readonly ViewItem[] = [
   { id: "clusters", label: "Clusters", icon: Shapes, available: true },
   { id: "bridges", label: "Bridges", icon: Waypoints, available: true },
   { id: "forgotten", label: "Forgotten", icon: Clock, available: true },
-  { id: "dupes", label: "Dupes", icon: Copy, available: false },
+  { id: "dupes", label: "Dupes", icon: Copy, available: true },
   { id: "path", label: "Path", icon: Route, available: true },
 ];
 
