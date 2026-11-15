@@ -32,7 +32,8 @@ import { useAppStore, type ViewId } from "@/lib/store";
 // `lg` breakpoint the nav collapses into a menu sheet and the detail panel
 // becomes a bottom sheet. Search comes in through the `search` slot; filters,
 // theme, views other than Graph, and the timeline are placeholders wired up by
-// later M3/M4 tasks. Filters come in through the `filters` slot (T3.7).
+// later M3/M4 tasks. Filters come in through the `filters` slot (T3.7). The
+// Clusters view (T3.8) is rendered by App over the canvas.
 
 export type { ViewId };
 
@@ -46,7 +47,7 @@ interface ViewItem {
 
 const VIEWS: readonly ViewItem[] = [
   { id: "graph", label: "Graph", icon: Network, available: true },
-  { id: "clusters", label: "Clusters", icon: Shapes, available: false },
+  { id: "clusters", label: "Clusters", icon: Shapes, available: true },
   { id: "bridges", label: "Bridges", icon: Waypoints, available: false },
   { id: "forgotten", label: "Forgotten", icon: Clock, available: false },
   { id: "dupes", label: "Dupes", icon: Copy, available: false },

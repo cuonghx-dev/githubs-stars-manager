@@ -73,6 +73,11 @@ function currentPalette(): Palette {
 /** Camera ratio used when centring a node from search (smaller = closer). */
 const CENTER_ZOOM_RATIO = 0.35;
 
+/** Margin around a fitted node set, as a factor of its extent. */
+const FIT_PADDING = 1.25;
+/** Closest zoom a fit may reach, so a tiny cluster is not blown up. */
+const FIT_MIN_RATIO = 0.08;
+
 type Options = Partial<SigmaOptions<NodeAttributes, EdgeAttributes>>;
 
 /** Mirror of the store slices the reducers read; mutated, never rendered. */
@@ -258,6 +263,39 @@ function GraphEvents({
             x: display.x,
             y: display.y,
             ratio: Math.min(camera.ratio, CENTER_ZOOM_RATIO),
+          },
+          { duration: 600 },
+        );
+      }),
+    [sigma],
+  );
+
+  // Cluster overview (T3.8) asks to fit a node set: animate the camera to the
+  // centre of their bounding box with a ratio that keeps them all in view.
+  useEffect(
+    () =>
+      useAppStore.subscribe((state, prev) => {
+        const request = state.fitRequest;
+        if (request === null || request === prev.fitRequest) return;
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        for (const node of request.nodes) {
+          const display = sigma.getNodeDisplayData(node);
+          if (!display) continue;
+          minX = Math.min(minX, display.x);
+          minY = Math.min(minY, display.y);
+          maxX = Math.max(maxX, display.x);
+          maxY = Math.max(maxY, display.y);
+        }
+        if (minX === Infinity) return;
+        const extent = Math.max(maxX - minX, maxY - minY) * FIT_PADDING;
+        void sigma.getCamera().animate(
+          {
+            x: (minX + maxX) / 2,
+            y: (minY + maxY) / 2,
+            ratio: Math.min(1, Math.max(FIT_MIN_RATIO, extent)),
           },
           { duration: 600 },
         );

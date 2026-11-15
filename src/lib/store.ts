@@ -57,6 +57,11 @@ export interface AppState {
    * changes on every request so picking the same node twice re-centres.
    */
   centerRequest: { node: string; seq: number } | null;
+  /**
+   * Latest "fit the camera to these nodes" request (cluster overview, T3.8).
+   * `seq` changes on every request so the same set can be refitted.
+   */
+  fitRequest: { nodes: readonly string[]; seq: number } | null;
 
   /** Select a node (or clear with null); a new node is pushed to the walk. */
   select: (node: string | null) => void;
@@ -72,6 +77,8 @@ export interface AppState {
   clearWalk: () => void;
   /** Ask the canvas to animate the camera to a node. */
   centerOn: (node: string) => void;
+  /** Ask the canvas to animate the camera so these nodes fill the view. */
+  fitNodes: (nodes: readonly string[]) => void;
 }
 
 export const useAppStore = create<AppState>()((set, get) => ({
@@ -82,6 +89,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   theme: "system",
   walkHistory: [],
   centerRequest: null,
+  fitRequest: null,
 
   select: (node) => {
     if (node === get().selectedNode) return;
@@ -115,6 +123,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
   centerOn: (node) =>
     set((s) => ({
       centerRequest: { node, seq: (s.centerRequest?.seq ?? 0) + 1 },
+    })),
+  fitNodes: (nodes) =>
+    set((s) => ({
+      fitRequest: { nodes, seq: (s.fitRequest?.seq ?? 0) + 1 },
     })),
 }));
 

@@ -1,6 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/app/AppShell";
+import { ClusterOverview } from "@/features/clusters/ClusterOverview";
 import { DetailPanel } from "@/features/detail/DetailPanel";
 import { FilterBar, NoResults } from "@/features/filters/FilterBar";
 import { buildSimilarIndex } from "@/features/detail/reasons";
@@ -53,6 +54,7 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
     [data.nodes, data.edges],
   );
   const selectedNode = useAppStore((s) => s.selectedNode);
+  const view = useAppStore((s) => s.view);
   const filters = useAppStore((s) => s.filters);
   const matchCount = useMemo(
     () =>
@@ -96,6 +98,9 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
     >
       <GraphCanvas graph={graph} clusters={data.clusters} nodes={data.nodes} />
       <NoResults matchCount={matchCount} />
+      {view === "clusters" && (
+        <ClusterOverview clusters={data.clusters} nodes={data.nodes} />
+      )}
     </AppShell>
   );
 }
