@@ -42,7 +42,8 @@ import type {
 // labels sit at centroids while zoomed out (FR-32).
 //
 // Focus mode (FR-34): the selected node and its 1-hop neighbours stay at full
-// colour, 2-hop nodes are dimmed and the rest fade; Esc clears the selection.
+// colour, 2-hop nodes are dimmed and the rest fade; Esc clears the selection
+// (handled by the global shortcuts, T3.10).
 // A hover highlight takes precedence over focus while the pointer is on a node.
 
 interface Palette extends FadeColors, FocusColors {
@@ -212,18 +213,6 @@ function GraphEvents({
     });
   }, [registerEvents]);
 
-  // Esc leaves focus mode (FR-34). Skip when another handler already used it
-  // (e.g. a dialog or sheet closing) so one press does one thing.
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      const { selectedNode, select } = useAppStore.getState();
-      if (selectedNode !== null) select(null);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
-
   // Store → refs → sigma.refresh(), without re-rendering React.
   useEffect(() => {
     const sync = (state: AppState, prev: AppState | null) => {
@@ -303,6 +292,17 @@ function GraphEvents({
           },
           { duration: 600 },
         );
+      }),
+    [sigma],
+  );
+
+  // `f` (T3.10) asks to fit the whole graph: animate back to the default
+  // camera state, which frames every node.
+  useEffect(
+    () =>
+      useAppStore.subscribe((state, prev) => {
+        if (state.fitGraphSeq === prev.fitGraphSeq) return;
+        void sigma.getCamera().reset({ duration: 600 });
       }),
     [sigma],
   );

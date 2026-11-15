@@ -3,6 +3,7 @@ import {
   Copy,
   Footprints,
   Clock,
+  Keyboard,
   Menu,
   Monitor,
   Moon,
@@ -129,6 +130,7 @@ export function AppShell({
               {freshness}
             </p>
           )}
+          <ShortcutsButton />
           <ThemeToggle />
         </div>
       </header>
@@ -331,6 +333,23 @@ function ThemeToggle() {
       onClick={() => setTheme(nextThemePreference(theme))}
     >
       <Icon />
+    </Button>
+  );
+}
+
+/** Opens the keyboard shortcut dialog (T3.10); same as pressing `?`. */
+function ShortcutsButton() {
+  const setOpen = useAppStore((s) => s.setShortcutsOpen);
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label="Keyboard shortcuts"
+      aria-keyshortcuts="?"
+      title="Keyboard shortcuts (?)"
+      onClick={() => setOpen(true)}
+    >
+      <Keyboard />
     </Button>
   );
 }

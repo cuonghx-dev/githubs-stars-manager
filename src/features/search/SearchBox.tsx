@@ -1,5 +1,5 @@
 import { Search } from "lucide-react";
-import { useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
   buildSearchIndex,
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 // Header search box (FR-50, T3.6). ARIA combobox over the MiniSearch index:
 // type to search, ↑/↓ to move, Enter or click to pick, Esc to close. Picking
 // a result selects the node and asks the canvas to animate the camera to it.
+// `/` anywhere focuses the box (T3.10).
 
 interface SearchBoxProps {
   nodes: readonly RepoNode[];
@@ -27,6 +28,17 @@ export function SearchBox({ nodes, className }: SearchBoxProps) {
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
+
+  // `/` (T3.10) asks the search box to take focus.
+  useEffect(
+    () =>
+      useAppStore.subscribe((state, prev) => {
+        if (state.focusSearchSeq === prev.focusSearchSeq) return;
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }),
+    [],
+  );
 
   const hits = useMemo(
     () => searchRepos(index, repoById, query),

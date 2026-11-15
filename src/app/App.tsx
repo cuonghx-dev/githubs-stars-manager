@@ -7,6 +7,8 @@ import { FilterBar, NoResults } from "@/features/filters/FilterBar";
 import { buildSimilarIndex } from "@/features/detail/reasons";
 import { GraphCanvas } from "@/features/graph/GraphCanvas";
 import { SearchBox } from "@/features/search/SearchBox";
+import { ShortcutDialog } from "@/features/shortcuts/ShortcutDialog";
+import { useKeyboardShortcuts } from "@/features/shortcuts/useKeyboardShortcuts";
 import { formatFreshness } from "@/lib/format";
 import {
   loadGraph,
@@ -70,6 +72,7 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
     [data.nodes, filters],
   );
   const repo = selectedNode === null ? undefined : repoById.get(selectedNode);
+  useKeyboardShortcuts(); // FR-38, T3.10
 
   // Narrow screens: selecting a node opens the detail bottom sheet (FR-34).
   const [detailOpen, setDetailOpen] = useState(false);
@@ -107,6 +110,7 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
       {view === "clusters" && (
         <ClusterOverview clusters={data.clusters} nodes={data.nodes} />
       )}
+      <ShortcutDialog />
     </AppShell>
   );
 }

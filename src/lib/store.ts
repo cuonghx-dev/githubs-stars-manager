@@ -63,6 +63,12 @@ export interface AppState {
    * `seq` changes on every request so the same set can be refitted.
    */
   fitRequest: { nodes: readonly string[]; seq: number } | null;
+  /** Bumped to ask the canvas to fit the whole graph (`f`, T3.10). */
+  fitGraphSeq: number;
+  /** Bumped to ask the search box to take focus (`/`, T3.10). */
+  focusSearchSeq: number;
+  /** Whether the keyboard shortcut dialog is open (`?`, T3.10). */
+  shortcutsOpen: boolean;
 
   /** Select a node (or clear with null); a new node is pushed to the walk. */
   select: (node: string | null) => void;
@@ -80,6 +86,11 @@ export interface AppState {
   centerOn: (node: string) => void;
   /** Ask the canvas to animate the camera so these nodes fill the view. */
   fitNodes: (nodes: readonly string[]) => void;
+  /** Ask the canvas to animate the camera back to the whole graph. */
+  fitGraph: () => void;
+  /** Ask the search box to take focus. */
+  focusSearch: () => void;
+  setShortcutsOpen: (open: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()((set, get) => ({
@@ -91,6 +102,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
   walkHistory: [],
   centerRequest: null,
   fitRequest: null,
+  fitGraphSeq: 0,
+  focusSearchSeq: 0,
+  shortcutsOpen: false,
 
   select: (node) => {
     if (node === get().selectedNode) return;
@@ -132,6 +146,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
     set((s) => ({
       fitRequest: { nodes, seq: (s.fitRequest?.seq ?? 0) + 1 },
     })),
+  fitGraph: () => set((s) => ({ fitGraphSeq: s.fitGraphSeq + 1 })),
+  focusSearch: () => set((s) => ({ focusSearchSeq: s.focusSearchSeq + 1 })),
+  setShortcutsOpen: (shortcutsOpen) => set({ shortcutsOpen }),
 }));
 
 function pushWalk(history: readonly string[], node: string): string[] {
