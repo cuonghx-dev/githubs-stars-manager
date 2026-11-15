@@ -1,11 +1,17 @@
 // Keyboard shortcuts (FR-38, T3.10). Pure key → action mapping so it can be
 // tested without a DOM; `useKeyboardShortcuts` wires it to `window`.
 //
-// P0 subset only: `/` focus search, `Esc` clear selection / leave a view,
-// `f` fit graph, `?` shortcut list. The random-walk keys (`r`, `[`, `]`) are
-// P1 and land with T4.10.
+// `/` focus search, `Esc` clear selection / leave a view, `f` fit graph,
+// `?` shortcut list, and the random-walk keys `r`, `[`, `]` (T4.10, FR-65).
 
-export type ShortcutAction = "focus-search" | "clear" | "fit" | "help";
+export type ShortcutAction =
+  | "focus-search"
+  | "clear"
+  | "fit"
+  | "help"
+  | "walk-step"
+  | "walk-back"
+  | "walk-forward";
 
 export interface ShortcutInfo {
   action: ShortcutAction;
@@ -23,6 +29,9 @@ export const SHORTCUTS: readonly ShortcutInfo[] = [
     description: "Clear selection or go back to the graph",
   },
   { action: "fit", keys: ["f"], description: "Fit graph to screen" },
+  { action: "walk-step", keys: ["r"], description: "Random walk step" },
+  { action: "walk-back", keys: ["["], description: "Walk back" },
+  { action: "walk-forward", keys: ["]"], description: "Walk forward" },
   { action: "help", keys: ["?"], description: "Show keyboard shortcuts" },
 ];
 
@@ -63,6 +72,13 @@ export function resolveShortcut(event: KeyLike): ShortcutAction | null {
       return "fit";
     case "?":
       return "help";
+    case "r":
+    case "R":
+      return "walk-step";
+    case "[":
+      return "walk-back";
+    case "]":
+      return "walk-forward";
     default:
       return null;
   }

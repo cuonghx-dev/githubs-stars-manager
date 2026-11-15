@@ -14,6 +14,8 @@ import { SearchBox } from "@/features/search/SearchBox";
 import { TimelineSlider } from "@/features/timeline/TimelineSlider";
 import { ShortcutDialog } from "@/features/shortcuts/ShortcutDialog";
 import { useKeyboardShortcuts } from "@/features/shortcuts/useKeyboardShortcuts";
+import { useRandomWalk } from "@/features/walk/use-random-walk";
+import { WalkControls } from "@/features/walk/WalkControls";
 import { formatFreshness } from "@/lib/format";
 import {
   loadGraph,
@@ -77,7 +79,8 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
     [data.nodes, filters],
   );
   const repo = selectedNode === null ? undefined : repoById.get(selectedNode);
-  useKeyboardShortcuts(); // FR-38, T3.10
+  const walk = useRandomWalk(graph, data.nodes); // FR-65, T4.10
+  useKeyboardShortcuts(walk); // FR-38, T3.10
 
   // Narrow screens: selecting a node opens the detail bottom sheet (FR-34).
   const [detailOpen, setDetailOpen] = useState(false);
@@ -113,6 +116,7 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
     >
       <GraphCanvas graph={graph} clusters={data.clusters} nodes={data.nodes} />
       <NoResults matchCount={matchCount} />
+      {view === "graph" && <WalkControls walk={walk} />}
       {view === "clusters" && (
         <ClusterOverview clusters={data.clusters} nodes={data.nodes} />
       )}

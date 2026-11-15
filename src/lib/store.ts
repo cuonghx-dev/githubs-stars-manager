@@ -52,8 +52,10 @@ export interface AppState {
   filters: Filters;
   view: ViewId;
   theme: ThemePreference;
-  /** Nodes visited by selection, oldest first; the last one is current. */
+  /** Nodes visited by selection, oldest first (FR-65). */
   walkHistory: readonly string[];
+  /** Cursor into `walkHistory`; -1 when empty. Back/forward move it. */
+  walkIndex: number;
   /**
    * Latest "move the camera to this node" request (search, T3.6). `seq`
    * changes on every request so picking the same node twice re-centres.
@@ -79,7 +81,10 @@ export interface AppState {
    */
   pathNodes: readonly string[] | null;
 
-  /** Select a node (or clear with null); a new node is pushed to the walk. */
+  /**
+   * Select a node (or clear with null). A new node is pushed after the
+   * walk cursor, dropping any forward entries, like browser history.
+   */
   select: (node: string | null) => void;
   /** Toggle: selecting the selected node clears the selection. */
   toggleSelect: (node: string) => void;
@@ -88,8 +93,10 @@ export interface AppState {
   clearFilters: () => void;
   setView: (view: ViewId) => void;
   setTheme: (theme: ThemePreference) => void;
-  /** Step back in the walk history and select the previous node. */
-  walkBack: () => void;
+  /** Step back in the walk history and select that node; returns it. */
+  walkBack: () => string | null;
+  /** Step forward in the walk history and select that node; returns it. */
+  walkForward: () => string | null;
   clearWalk: () => void;
   /** Ask the canvas to animate the camera to a node. */
   centerOn: (node: string) => void;
@@ -111,6 +118,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   view: "graph",
   theme: readThemePreference(),
   walkHistory: [],
+  walkIndex: -1,
   centerRequest: null,
   fitRequest: null,
   fitGraphSeq: 0,
@@ -128,7 +136,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     }
     set((s) => ({
       selectedNode: node,
-      walkHistory: pushWalk(s.walkHistory, node),
+      ...pushWalk(s.walkHistory, s.walkIndex, node),
     }));
   },
   toggleSelect: (node) => {
@@ -145,13 +153,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
     writeThemePreference(theme);
     set({ theme });
   },
-  walkBack: () =>
-    set((s) => {
-      if (s.walkHistory.length < 2) return {};
-      const walkHistory = s.walkHistory.slice(0, -1);
-      return { walkHistory, selectedNode: walkHistory.at(-1) ?? null };
-    }),
-  clearWalk: () => set({ walkHistory: [] }),
+  walkBack: () => moveWalk(-1),
+  walkForward: () => moveWalk(1),
+  clearWalk: () => set({ walkHistory: [], walkIndex: -1 }),
   centerOn: (node) =>
     set((s) => ({
       centerRequest: { node, seq: (s.centerRequest?.seq ?? 0) + 1 },
@@ -171,12 +175,35 @@ export const useAppStore = create<AppState>()((set, get) => ({
   setPathNodes: (pathNodes) => set({ pathNodes }),
 }));
 
-function pushWalk(history: readonly string[], node: string): string[] {
-  if (history.at(-1) === node) return [...history];
-  const next = [...history, node];
-  return next.length > WALK_HISTORY_LIMIT
-    ? next.slice(next.length - WALK_HISTORY_LIMIT)
-    : next;
+/** Move the walk cursor by `delta` and select that node, if any. */
+function moveWalk(delta: -1 | 1): string | null {
+  const s = useAppStore.getState();
+  // Coming back from "nothing selected", Back re-selects the current entry.
+  const index =
+    s.selectedNode === null && delta === -1 && s.walkIndex >= 0
+      ? s.walkIndex
+      : s.walkIndex + delta;
+  const node = s.walkHistory[index];
+  if (node === undefined) return null;
+  useAppStore.setState({ walkIndex: index, selectedNode: node });
+  return node;
+}
+
+function pushWalk(
+  history: readonly string[],
+  index: number,
+  node: string,
+): { walkHistory: string[]; walkIndex: number } {
+  // Re-selecting the current entry keeps the forward entries.
+  if (history[index] === node)
+    return { walkHistory: [...history], walkIndex: index };
+  const kept = history.slice(0, index + 1);
+  const next = [...kept, node];
+  const walkHistory =
+    next.length > WALK_HISTORY_LIMIT
+      ? next.slice(next.length - WALK_HISTORY_LIMIT)
+      : next;
+  return { walkHistory, walkIndex: walkHistory.length - 1 };
 }
 
 /** True when at least one filter narrows the graph (mode aside). */

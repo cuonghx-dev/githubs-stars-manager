@@ -1,6 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { resolveShortcut } from "@/features/shortcuts/shortcuts";
 import { useAppStore } from "@/lib/store";
+
+/** Random-walk moves; they need the graph, so the caller supplies them. */
+export interface WalkActions {
+  step: () => void;
+  back: () => void;
+  forward: () => void;
+}
 
 /**
  * Global keyboard shortcuts (FR-38, T3.10). Actions only write to the store;
@@ -8,7 +15,11 @@ import { useAppStore } from "@/lib/store";
  * dialog or sheet are left to it, and an Esc another handler already used
  * (search box, dialog, sheet) is skipped so one press does one thing.
  */
-export function useKeyboardShortcuts(): void {
+export function useKeyboardShortcuts(walk?: WalkActions): void {
+  const walkRef = useRef(walk);
+  useEffect(() => {
+    walkRef.current = walk;
+  });
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (insideDialog(event.target)) return;
@@ -28,6 +39,17 @@ export function useKeyboardShortcuts(): void {
           event.preventDefault();
           state.setShortcutsOpen(true);
           break;
+        case "walk-step":
+        case "walk-back":
+        case "walk-forward": {
+          const actions = walkRef.current;
+          if (!actions) break;
+          event.preventDefault();
+          if (action === "walk-step") actions.step();
+          else if (action === "walk-back") actions.back();
+          else actions.forward();
+          break;
+        }
         case "clear":
           // Leave focus mode first (FR-34); a second Esc leaves a view
           // overlay such as the cluster overview.
