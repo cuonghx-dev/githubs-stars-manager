@@ -36,9 +36,10 @@ import { nextThemePreference } from "@/lib/theme";
 // `lg` breakpoint the nav collapses into a menu sheet and the detail panel
 // becomes a bottom sheet. Search comes in through the `search` slot; filters,
 // views other than Graph, and the timeline are placeholders wired up by
-// later M3/M4 tasks. Filters come in through the `filters` slot (T3.7). The
-// Clusters (T3.8), Bridges (T4.5), Path (T4.6), Forgotten (T4.7) and Dupes
-// (T4.8) views are rendered by App over the canvas.
+// later M3/M4 tasks. Filters come in through the `filters` slot (T3.7) and
+// the timeline slider through the `timeline` slot (T4.9). The Clusters
+// (T3.8), Bridges (T4.5), Path (T4.6), Forgotten (T4.7) and Dupes (T4.8)
+// views are rendered by App over the canvas.
 
 export type { ViewId };
 
@@ -72,6 +73,8 @@ interface AppShellProps {
    * menu sheet on narrow ones. A disabled placeholder when omitted.
    */
   filters?: ReactNode;
+  /** Footer timeline slider (T4.9); a disabled placeholder when omitted. */
+  timeline?: ReactNode;
   /** The sigma canvas. */
   children: ReactNode;
   /** Detail panel body; null shows the empty hint. */
@@ -86,6 +89,7 @@ export function AppShell({
   freshnessTitle,
   search,
   filters,
+  timeline,
   children,
   detail = null,
   detailOpen: detailOpenProp,
@@ -168,7 +172,7 @@ export function AppShell({
         )}
       </div>
 
-      <TimelineBar />
+      {timeline ?? <TimelineBar />}
 
       {!wide && (
         <>

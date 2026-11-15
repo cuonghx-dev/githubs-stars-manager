@@ -11,6 +11,7 @@ import { buildSimilarIndex } from "@/features/detail/reasons";
 import { GraphCanvas } from "@/features/graph/GraphCanvas";
 import { PathView } from "@/features/path/PathView";
 import { SearchBox } from "@/features/search/SearchBox";
+import { TimelineSlider } from "@/features/timeline/TimelineSlider";
 import { ShortcutDialog } from "@/features/shortcuts/ShortcutDialog";
 import { useKeyboardShortcuts } from "@/features/shortcuts/useKeyboardShortcuts";
 import { formatFreshness } from "@/lib/format";
@@ -96,6 +97,7 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
       freshnessTitle={data.generatedAt}
       search={<SearchBox nodes={data.nodes} />}
       filters={<FilterBar nodes={data.nodes} clusters={data.clusters} />}
+      timeline={<TimelineSlider nodes={data.nodes} />}
       detail={
         repo ? (
           <DetailPanel
