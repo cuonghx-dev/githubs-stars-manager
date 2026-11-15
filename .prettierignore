@@ -1,0 +1,10 @@
+dist
+coverage
+node_modules
+pnpm-lock.yaml
+public/graph.json
+data
+.gc
+.beads
+.claude
+docs
