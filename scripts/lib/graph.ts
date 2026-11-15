@@ -16,6 +16,7 @@ import type { SignalName } from "../../config/graph.config.ts";
 import {
   GRAPH_FILE_VERSION,
   type Cluster,
+  type Duplicate,
   type GraphFile,
   type RepoEdge,
   type RepoNode,
@@ -72,6 +73,12 @@ export interface BuildGraphOptions {
   layout: LayoutOptions;
   /** Louvain settings (FR-24); absent = every node "Unclustered" (M1). */
   clustering?: ClusterOptions;
+  /**
+   * Cosine at or above which a pair is listed as a possible duplicate (FR-63);
+   * absent = no `duplicates` field. Uses raw cosine over every embedded pair,
+   * independent of edge pruning.
+   */
+  duplicateThreshold?: number;
 }
 
 export interface BuildGraphInput {
@@ -93,6 +100,8 @@ export interface BuildGraphStats {
   candidates: number;
   /** Pairs with a semantic (cosine) signal. */
   semanticPairs: number;
+  /** Pairs at or above `duplicateThreshold`. */
+  duplicates: number;
   edges: number;
   forced: number;
   mentionEdges: number;
@@ -219,6 +228,8 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
   };
 
   let semanticPairs = 0;
+  const duplicates: Duplicate[] = [];
+  const dupThreshold = options.duplicateThreshold;
   const vectors = enabled.has("semantic")
     ? normalizedVectors(ids, input.embeddings)
     : [];
@@ -240,8 +251,12 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
           continue;
         }
         semanticPairs++;
+        const cosine = dot(vi, vj);
+        if (dupThreshold !== undefined && cosine >= dupThreshold) {
+          duplicates.push([a, b, Math.min(cosine, 1)]);
+        }
         // Stored raw (FR-23); rescaled only inside combinedWeight (FR-21).
-        offer(a, b, { ...base, semantic: dot(vi, vj) });
+        offer(a, b, { ...base, semantic: cosine });
       }
     }
   } else {
@@ -299,6 +314,14 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
     clusters,
     nodes,
     edges,
+    // Highest cosine first; ties by pair id (serialize re-sorts by id).
+    ...(dupThreshold !== undefined
+      ? {
+          duplicates: duplicates.sort(
+            (x, y) => y[2] - x[2] || byId(x[0], y[0]) || byId(x[1], y[1]),
+          ),
+        }
+      : {}),
   };
   return {
     graph,
@@ -306,6 +329,7 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
       nodes: nodes.length,
       candidates: pruner.offered,
       semanticPairs,
+      duplicates: duplicates.length,
       edges: edges.length,
       forced: kept.filter((e) => e.forced).length,
       mentionEdges: edges.filter((e) => e.signals.mention).length,

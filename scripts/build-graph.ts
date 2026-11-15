@@ -146,6 +146,7 @@ export async function runBuildGraph(deps: BuildGraphDeps): Promise<GraphFile> {
   step.set("nodes", stats.nodes);
   step.set("candidates", stats.candidates);
   step.set("semanticPairs", stats.semanticPairs);
+  step.set("duplicates", stats.duplicates);
   step.set("edges", stats.edges);
   step.set("forced", stats.forced);
   step.set("mentions", stats.mentionEdges);
@@ -173,6 +174,7 @@ async function main(): Promise<void> {
       minWeight: config.minWeight,
       enabledSignals: M2_SIGNALS,
       layout: config.layout,
+      duplicateThreshold: config.duplicateThreshold,
       clustering: {
         resolution: config.louvain.resolution,
         seed: config.louvain.seed,
