@@ -4,13 +4,15 @@ import {
   Footprints,
   Clock,
   Menu,
+  Monitor,
+  Moon,
   Network,
   PanelBottomOpen,
   Play,
   Route,
   Search,
   Shapes,
-  SunMoon,
+  Sun,
   Waypoints,
   type LucideIcon,
 } from "lucide-react";
@@ -25,13 +27,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useMediaQuery, WIDE_QUERY } from "@/hooks/use-media-query";
-import { useAppStore, type ViewId } from "@/lib/store";
+import { useAppStore, type ThemePreference, type ViewId } from "@/lib/store";
+import { nextThemePreference } from "@/lib/theme";
 
 // App shell from PRD §6 (T3.1): header (search, filters, theme, freshness),
 // left views nav, sigma canvas, repo detail panel, timeline bar. Below the
 // `lg` breakpoint the nav collapses into a menu sheet and the detail panel
 // becomes a bottom sheet. Search comes in through the `search` slot; filters,
-// theme, views other than Graph, and the timeline are placeholders wired up by
+// views other than Graph, and the timeline are placeholders wired up by
 // later M3/M4 tasks. Filters come in through the `filters` slot (T3.7). The
 // Clusters view (T3.8) is rendered by App over the canvas.
 
@@ -126,15 +129,7 @@ export function AppShell({
               {freshness}
             </p>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Toggle theme"
-            title="Theme (coming soon)"
-            disabled
-          >
-            <SunMoon />
-          </Button>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -311,5 +306,31 @@ function TimelineBar() {
         <Play />
       </Button>
     </footer>
+  );
+}
+
+const THEME_META: Record<ThemePreference, { label: string; icon: LucideIcon }> =
+  {
+    system: { label: "System", icon: Monitor },
+    light: { label: "Light", icon: Sun },
+    dark: { label: "Dark", icon: Moon },
+  };
+
+/** Cycles system → light → dark; the choice is persisted by the store. */
+function ThemeToggle() {
+  const theme = useAppStore((s) => s.theme);
+  const setTheme = useAppStore((s) => s.setTheme);
+  const { label, icon: Icon } = THEME_META[theme];
+  const next = THEME_META[nextThemePreference(theme)].label;
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label={`Theme: ${label}. Switch to ${next}`}
+      title={`Theme: ${label} (click for ${next})`}
+      onClick={() => setTheme(nextThemePreference(theme))}
+    >
+      <Icon />
+    </Button>
   );
 }

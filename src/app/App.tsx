@@ -13,6 +13,7 @@ import {
   type LoadedGraph,
   type LoadGraphResult,
 } from "@/lib/load-graph";
+import { applyTheme } from "@/lib/theme";
 import { filtersActive, matchesFilters, useAppStore } from "@/lib/store";
 
 // App entry: loading → graph inside the PRD §6 shell (T3.1), or the
@@ -22,6 +23,11 @@ type State = { status: "loading" } | LoadGraphResult;
 
 export function App() {
   const [state, setState] = useState<State>({ status: "loading" });
+  const theme = useAppStore((s) => s.theme);
+
+  // Apply the theme preference to <html> (NFR-8, T3.9); "system" keeps
+  // following the OS scheme until the user picks light or dark.
+  useEffect(() => applyTheme(theme), [theme]);
 
   useEffect(() => {
     let cancelled = false;

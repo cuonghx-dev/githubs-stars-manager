@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { RepoNode } from "@/lib/graph-schema";
+import { readThemePreference, writeThemePreference } from "@/lib/theme";
 
 // App-wide UI state (T3.2). React components subscribe with selectors; the
 // sigma canvas never re-renders from it: GraphCanvas mirrors the slices it
@@ -86,7 +87,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   hoveredNode: null,
   filters: EMPTY_FILTERS,
   view: "graph",
-  theme: "system",
+  theme: readThemePreference(),
   walkHistory: [],
   centerRequest: null,
   fitRequest: null,
@@ -112,7 +113,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
   clearFilters: () =>
     set((s) => ({ filters: { ...EMPTY_FILTERS, mode: s.filters.mode } })),
   setView: (view) => set({ view }),
-  setTheme: (theme) => set({ theme }),
+  setTheme: (theme) => {
+    writeThemePreference(theme);
+    set({ theme });
+  },
   walkBack: () =>
     set((s) => {
       if (s.walkHistory.length < 2) return {};

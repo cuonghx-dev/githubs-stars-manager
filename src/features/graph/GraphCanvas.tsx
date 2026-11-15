@@ -50,7 +50,9 @@ interface Palette extends FadeColors, FocusColors {
   edgeColor: string;
 }
 
-const LIGHT: Palette = {
+// Fallbacks if the CSS tokens are missing; the real values live in
+// src/index.css as --graph-* tokens (light in :root, dark in .dark).
+const FALLBACK: Palette = {
   label: "#171717",
   edgeColor: "rgba(115, 115, 115, 0.35)",
   node: "#e5e5e5",
@@ -58,16 +60,18 @@ const LIGHT: Palette = {
   dimEdge: "rgba(115, 115, 115, 0.18)",
 };
 
-const DARK: Palette = {
-  label: "#fafafa",
-  edgeColor: "rgba(163, 163, 163, 0.3)",
-  node: "#3f3f46",
-  edge: "rgba(163, 163, 163, 0.06)",
-  dimEdge: "rgba(163, 163, 163, 0.15)",
-};
-
+/** Reads the sigma palette from the CSS tokens of the active theme. */
 function currentPalette(): Palette {
-  return document.documentElement.classList.contains("dark") ? DARK : LIGHT;
+  const style = getComputedStyle(document.documentElement);
+  const token = (name: string, fallback: string) =>
+    style.getPropertyValue(name).trim() || fallback;
+  return {
+    label: token("--graph-label", FALLBACK.label),
+    edgeColor: token("--graph-edge", FALLBACK.edgeColor),
+    node: token("--graph-node-faded", FALLBACK.node),
+    edge: token("--graph-edge-faded", FALLBACK.edge),
+    dimEdge: token("--graph-edge-dimmed", FALLBACK.dimEdge),
+  };
 }
 
 /** Camera ratio used when centring a node from search (smaller = closer). */
@@ -105,7 +109,7 @@ export function GraphCanvas({ graph, clusters, nodes }: GraphCanvasProps) {
     filteredOut: null,
     filterMode: "fade",
   });
-  const paletteRef = useRef<Palette>(LIGHT);
+  const paletteRef = useRef<Palette>(FALLBACK);
 
   const options = useMemo<Options>(
     () => ({
@@ -303,7 +307,7 @@ function GraphEvents({
     [sigma],
   );
 
-  // Follow the `dark` class on <html> (set from the system scheme, NFR-8).
+  // Re-read the palette whenever the `dark` class on <html> flips (NFR-8).
   useEffect(() => {
     const apply = () => {
       paletteRef.current = currentPalette();
