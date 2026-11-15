@@ -1,11 +1,11 @@
 // `pnpm build-graph`: data/raw/stars.json + READMEs → public/graph.json
-// (FR-6, FR-20-23, FR-27). I/O and wiring only; logic lives in
+// (FR-6, FR-20-24, FR-27). I/O and wiring only; logic lives in
 // scripts/lib/graph.ts, stable output in scripts/lib/serialize.ts.
 //
 // Signals: semantic (from data/embeddings.json, `pnpm embed`), topic, owner
 // and mention, weights renormalised per FR-21. Without an embeddings file the
-// build falls back to the M1 signals with a warning. All nodes unclustered
-// until T2.3; seeded ForceAtlas2 layout. The output is schema-validated
+// build falls back to the M1 signals with a warning. Seeded Louvain clusters
+// (FR-24) and seeded ForceAtlas2 layout. The output is schema-validated
 // and byte-identical across runs apart from `generatedAt` (NFR-4).
 
 import { readFile } from "node:fs/promises";
@@ -150,6 +150,8 @@ export async function runBuildGraph(deps: BuildGraphDeps): Promise<GraphFile> {
   step.set("forced", stats.forced);
   step.set("mentions", stats.mentionEdges);
   step.set("isolated", stats.isolated);
+  step.set("clusters", stats.clusters);
+  step.set("unclustered", stats.unclustered);
   step.set("kb", Math.round(bytes / 1024));
   step.done();
   return output;
@@ -171,6 +173,11 @@ async function main(): Promise<void> {
       minWeight: config.minWeight,
       enabledSignals: M2_SIGNALS,
       layout: config.layout,
+      clustering: {
+        resolution: config.louvain.resolution,
+        seed: config.louvain.seed,
+        minClusterSize: config.minClusterSize,
+      },
     },
     now: () => new Date(),
   });

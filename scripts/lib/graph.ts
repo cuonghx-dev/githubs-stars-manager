@@ -5,8 +5,9 @@
 //
 // Signals: topic, owner, mention and, when embeddings are given, semantic
 // (dense cosine over all pairs, T2.2). Pruning streams candidates through a
-// per-node top-k heap, so memory stays O(n·k) even for all n² pairs. Every
-// node is in the "Unclustered" group (-1) until clustering lands (T2.3). x/y come from the
+// per-node top-k heap, so memory stays O(n·k) even for all n² pairs. Clusters
+// come from seeded Louvain over the kept edges (FR-24, `lib/clusters.ts`);
+// labels are placeholders until TF-IDF lands (T2.4). x/y come from the
 // seeded ForceAtlas2 layout (FR-27). Output order is deterministic (nodes by
 // id, edges by `(source, target)` with `source < target`); rounding and schema
 // key order are applied by `lib/serialize.ts` before writing.
@@ -19,6 +20,13 @@ import {
   type RepoEdge,
   type RepoNode,
 } from "../../src/lib/graph-schema.ts";
+import {
+  UNCLUSTERED_COLOR,
+  UNCLUSTERED_ID,
+  UNCLUSTERED_LABEL,
+  computeClusters,
+  type ClusterOptions,
+} from "./clusters.ts";
 import { computeLayout, type LayoutOptions } from "./layout.ts";
 import { buildMentionIndex, findMentions } from "./mentions.ts";
 import { degreeMetrics } from "./metrics.ts";
@@ -38,10 +46,7 @@ import {
   type SignalWeights,
 } from "./weights.ts";
 
-export const UNCLUSTERED_ID = -1;
-export const UNCLUSTERED_LABEL = "Unclustered";
-/** Neutral grey that reads in both themes. */
-export const UNCLUSTERED_COLOR = "#9ca3af";
+export { UNCLUSTERED_COLOR, UNCLUSTERED_ID, UNCLUSTERED_LABEL };
 /** Detail-panel excerpt length in characters (FR-41). */
 export const EXCERPT_CHARS = 500;
 
@@ -64,6 +69,8 @@ export interface BuildGraphOptions {
   enabledSignals: readonly SignalName[];
   /** ForceAtlas2 iterations and seed (FR-27, NFR-4). */
   layout: LayoutOptions;
+  /** Louvain settings (FR-24); absent = every node "Unclustered" (M1). */
+  clustering?: ClusterOptions;
 }
 
 export interface BuildGraphInput {
@@ -89,6 +96,9 @@ export interface BuildGraphStats {
   forced: number;
   mentionEdges: number;
   isolated: number;
+  /** Real clusters (excluding "Unclustered"). */
+  clusters: number;
+  unclustered: number;
 }
 
 export interface BuildGraphResult {
@@ -119,6 +129,7 @@ export function toRepoNode(
   readme: string | undefined,
   metrics: { degree: number; weightedDegree: number },
   position: { x: number; y: number } = { x: 0, y: 0 },
+  cluster: number = UNCLUSTERED_ID,
 ): RepoNode {
   const slash = repo.nameWithOwner.indexOf("/");
   const readmeExcerpt =
@@ -145,7 +156,7 @@ export function toRepoNode(
     pushedAt: repo.pushedAt ?? repo.createdAt,
     createdAt: repo.createdAt,
     starredAt: repo.starredAt,
-    cluster: UNCLUSTERED_ID,
+    cluster,
     x: position.x,
     y: position.y,
     metrics: {
@@ -235,22 +246,30 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
 
   const metrics = degreeMetrics(ids, edges);
   const positions = computeLayout(ids, edges, options.layout);
+  const clustering = options.clustering
+    ? computeClusters(ids, edges, options.clustering)
+    : {
+        assignment: new Map<string, number>(),
+        clusters: [
+          { id: UNCLUSTERED_ID, color: UNCLUSTERED_COLOR, members: ids },
+        ],
+      };
   const nodes = repos.map((repo) =>
     toRepoNode(
       repo,
       input.readmes.get(repo.nameWithOwner),
       metrics.get(repo.nameWithOwner)!,
       positions.get(repo.nameWithOwner),
+      clustering.assignment.get(repo.nameWithOwner) ?? UNCLUSTERED_ID,
     ),
   );
-  const clusters: Cluster[] = [
-    {
-      id: UNCLUSTERED_ID,
-      label: UNCLUSTERED_LABEL,
-      color: UNCLUSTERED_COLOR,
-      size: nodes.length,
-    },
-  ];
+  const clusters: Cluster[] = clustering.clusters.map((c) => ({
+    id: c.id,
+    // Placeholder until TF-IDF labels (T2.4, FR-25).
+    label: c.id === UNCLUSTERED_ID ? UNCLUSTERED_LABEL : `Cluster ${c.id + 1}`,
+    color: c.color,
+    size: c.members.length,
+  }));
 
   const graph: GraphFile = {
     version: GRAPH_FILE_VERSION,
@@ -270,6 +289,8 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
       forced: kept.filter((e) => e.forced).length,
       mentionEdges: edges.filter((e) => e.signals.mention).length,
       isolated: nodes.filter((n) => n.metrics.degree === 0).length,
+      clusters: clusters.filter((c) => c.id !== UNCLUSTERED_ID).length,
+      unclustered: nodes.filter((n) => n.cluster === UNCLUSTERED_ID).length,
     },
   };
 }
