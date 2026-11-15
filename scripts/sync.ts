@@ -1,12 +1,13 @@
-// `pnpm sync`: fetch starred repos into data/raw/stars.json (FR-1, FR-2, FR-11).
-// I/O and wiring only; logic lives in scripts/lib/ (implementation plan §1).
-// README fetching (FR-3, FR-4) is added by T1.3.
+// `pnpm sync [--full]`: fetch starred repos into data/raw/stars.json and their
+// READMEs into data/raw/readmes/ (FR-1-4, FR-11, FR-13). `--full` ignores the
+// README cache. I/O and wiring only; logic lives in scripts/lib/ (plan §1).
 
 import { resolve } from "node:path";
 import config from "../config/graph.config.ts";
 import { readJsonOr, writeJsonAtomic } from "./lib/fs-atomic.ts";
 import { createGh, type GhClient } from "./lib/gh.ts";
 import { createLogger, type Logger } from "./lib/log.ts";
+import { syncReadmes } from "./lib/readmes.ts";
 import {
   STARS_FILE_VERSION,
   buildStarsFile,
@@ -18,12 +19,17 @@ import {
 
 export const ROOT = resolve(import.meta.dirname, "..");
 export const STARS_PATH = resolve(ROOT, "data/raw/stars.json");
+export const READMES_DIR = resolve(ROOT, "data/raw/readmes");
 
 export interface SyncDeps {
   gh: GhClient;
   logger: Logger;
   starsPath: string;
+  readmesDir: string;
   includePrivate: boolean;
+  readmeConcurrency: number;
+  /** Ignore the README cache (`--full`). */
+  full: boolean;
   now: () => Date;
 }
 
@@ -43,9 +49,30 @@ export async function runSync(deps: SyncDeps): Promise<StarsFile> {
       ? stored
       : null;
 
+  // Fix the summary order: star counters first, README counters after.
+  for (const key of [
+    "stars",
+    "private",
+    "added",
+    "removed",
+    "changed",
+    "renamed",
+  ]) {
+    step.set(key, 0);
+  }
+  const withReadmes = await syncReadmes({
+    gh: deps.gh,
+    dir: deps.readmesDir,
+    previous: previous?.repos ?? [],
+    next: repos,
+    full: deps.full,
+    concurrency: deps.readmeConcurrency,
+    log: step,
+  });
+
   const file = buildStarsFile({
     user: fetched.user,
-    repos,
+    repos: withReadmes,
     now: deps.now().toISOString(),
     previous,
   });
@@ -72,7 +99,10 @@ async function main(): Promise<void> {
     gh: createGh(),
     logger: createLogger(),
     starsPath: STARS_PATH,
+    readmesDir: READMES_DIR,
     includePrivate: config.includePrivate,
+    readmeConcurrency: config.readmeConcurrency,
+    full: process.argv.includes("--full"),
     now: () => new Date(),
   });
 }
