@@ -14,6 +14,7 @@ import { SearchBox } from "@/features/search/SearchBox";
 import { TimelineSlider } from "@/features/timeline/TimelineSlider";
 import { ShortcutDialog } from "@/features/shortcuts/ShortcutDialog";
 import { useKeyboardShortcuts } from "@/features/shortcuts/useKeyboardShortcuts";
+import { restoreUrlState, useUrlStateSync } from "@/hooks/use-url-state";
 import { useRandomWalk } from "@/features/walk/use-random-walk";
 import { WalkControls } from "@/features/walk/WalkControls";
 import { formatFreshness } from "@/lib/format";
@@ -41,7 +42,14 @@ export function App() {
   useEffect(() => {
     let cancelled = false;
     void loadGraph().then((result) => {
-      if (!cancelled) setState(result);
+      if (cancelled) return;
+      // Restore bookmarked filters/selection/view before the graph mounts
+      // (FR-52, T4.11).
+      if (result.status === "ok") {
+        const graph = result.graph.graph;
+        restoreUrlState((id) => graph.hasNode(id));
+      }
+      setState(result);
     });
     return () => {
       cancelled = true;
@@ -81,6 +89,7 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
   const repo = selectedNode === null ? undefined : repoById.get(selectedNode);
   const walk = useRandomWalk(graph, data.nodes); // FR-65, T4.10
   useKeyboardShortcuts(walk); // FR-38, T3.10
+  useUrlStateSync(); // FR-52, T4.11
 
   // Narrow screens: selecting a node opens the detail bottom sheet (FR-34).
   const [detailOpen, setDetailOpen] = useState(false);
