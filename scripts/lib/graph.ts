@@ -7,8 +7,8 @@
 // (dense cosine over all pairs, T2.2). Pruning streams candidates through a
 // per-node top-k heap, so memory stays O(n·k) even for all n² pairs. Clusters
 // come from seeded Louvain over the kept edges (FR-24, `lib/clusters.ts`);
-// labels are placeholders until TF-IDF lands (T2.4). x/y come from the
-// seeded ForceAtlas2 layout (FR-27). Output order is deterministic (nodes by
+// labels are the top TF-IDF terms per cluster (FR-25, `lib/tfidf.ts`). x/y
+// come from the seeded ForceAtlas2 layout (FR-27). Output order is deterministic (nodes by
 // id, edges by `(source, target)` with `source < target`); rounding and schema
 // key order are applied by `lib/serialize.ts` before writing.
 
@@ -27,6 +27,7 @@ import {
   computeClusters,
   type ClusterOptions,
 } from "./clusters.ts";
+import { clusterLabels } from "./tfidf.ts";
 import { computeLayout, type LayoutOptions } from "./layout.ts";
 import { buildMentionIndex, findMentions } from "./mentions.ts";
 import { degreeMetrics } from "./metrics.ts";
@@ -263,10 +264,13 @@ export function buildGraph(input: BuildGraphInput): BuildGraphResult {
       clustering.assignment.get(repo.nameWithOwner) ?? UNCLUSTERED_ID,
     ),
   );
+  const labels = clusterLabels(
+    clustering.clusters,
+    new Map(repos.map((r) => [r.nameWithOwner, r])),
+  );
   const clusters: Cluster[] = clustering.clusters.map((c) => ({
     id: c.id,
-    // Placeholder until TF-IDF labels (T2.4, FR-25).
-    label: c.id === UNCLUSTERED_ID ? UNCLUSTERED_LABEL : `Cluster ${c.id + 1}`,
+    label: labels.get(c.id) ?? UNCLUSTERED_LABEL,
     color: c.color,
     size: c.members.length,
   }));
