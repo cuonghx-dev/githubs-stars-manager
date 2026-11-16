@@ -13,7 +13,7 @@ import { readThemePreference, writeThemePreference } from "@/lib/theme";
 // theme (T3.9), path finder (T4.6), concept layer toggle (T5.7).
 
 export type ViewId =
-  "graph" | "clusters" | "bridges" | "forgotten" | "dupes" | "path";
+  "graph" | "clusters" | "top" | "bridges" | "forgotten" | "dupes" | "path";
 
 export type ThemePreference = "system" | "light" | "dark";
 

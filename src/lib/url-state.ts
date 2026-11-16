@@ -34,6 +34,7 @@ const KEYS = [
 const VIEWS: readonly ViewId[] = [
   "graph",
   "clusters",
+  "top",
   "bridges",
   "forgotten",
   "dupes",
