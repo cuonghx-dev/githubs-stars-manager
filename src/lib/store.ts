@@ -1,15 +1,16 @@
 import { create } from "zustand";
 import type { RepoNode } from "@/lib/graph-schema";
+import { readLocale, writeLocale, type Locale } from "@/lib/i18n";
 import { readThemePreference, writeThemePreference } from "@/lib/theme";
 
 // App-wide UI state (T3.2). React components subscribe with selectors; the
 // sigma canvas never re-renders from it: GraphCanvas mirrors the slices it
 // needs into refs via `useAppStore.subscribe` and calls `sigma.refresh()`.
 //
-// Scope: selection, hover, filters, active view, theme preference and the
-// "random walk" history. Later M3 tasks fill in behaviour on top of this:
-// focus mode (T3.3), filters UI (T3.7), cluster view (T3.8), theme (T3.9),
-// path finder (T4.6), concept layer toggle (T5.7).
+// Scope: selection, hover, filters, active view, theme and UI language
+// preferences and the "random walk" history. Later M3 tasks fill in behaviour
+// on top of this: focus mode (T3.3), filters UI (T3.7), cluster view (T3.8),
+// theme (T3.9), path finder (T4.6), concept layer toggle (T5.7).
 
 export type ViewId =
   "graph" | "clusters" | "bridges" | "forgotten" | "dupes" | "path";
@@ -52,6 +53,8 @@ export interface AppState {
   filters: Filters;
   view: ViewId;
   theme: ThemePreference;
+  /** UI language; persisted in localStorage. */
+  locale: Locale;
   /** Nodes visited by selection, oldest first (FR-65). */
   walkHistory: readonly string[];
   /** Cursor into `walkHistory`; -1 when empty. Back/forward move it. */
@@ -95,6 +98,7 @@ export interface AppState {
   clearFilters: () => void;
   setView: (view: ViewId) => void;
   setTheme: (theme: ThemePreference) => void;
+  setLocale: (locale: Locale) => void;
   /** Step back in the walk history and select that node; returns it. */
   walkBack: () => string | null;
   /** Step forward in the walk history and select that node; returns it. */
@@ -120,6 +124,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   filters: EMPTY_FILTERS,
   view: "graph",
   theme: readThemePreference(),
+  locale: readLocale(),
   walkHistory: [],
   walkIndex: -1,
   centerRequest: null,
@@ -156,6 +161,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
   setTheme: (theme) => {
     writeThemePreference(theme);
     set({ theme });
+  },
+  setLocale: (locale) => {
+    writeLocale(locale);
+    set({ locale });
   },
   walkBack: () => moveWalk(-1),
   walkForward: () => moveWalk(1),

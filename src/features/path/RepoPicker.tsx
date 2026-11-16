@@ -8,6 +8,7 @@ import {
   type SearchHit,
 } from "@/features/search/search-index";
 import type { RepoNode } from "@/lib/graph-schema";
+import { useT } from "@/lib/i18n/use-i18n";
 import { cn } from "@/lib/utils";
 
 // Repo picker for the path finder (T4.6): the same MiniSearch combobox as the
@@ -29,6 +30,7 @@ export function RepoPicker({
   index,
   repoById,
 }: RepoPickerProps) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -93,7 +95,7 @@ export function RepoPicker({
           <Button
             variant="ghost"
             size="icon-xs"
-            aria-label={`Clear ${label.toLowerCase()}`}
+            aria-label={t("picker.clear", { label: label.toLowerCase() })}
             onClick={() => {
               onChange(null);
               requestAnimationFrame(() => inputRef.current?.focus());
@@ -108,7 +110,7 @@ export function RepoPicker({
             ref={inputRef}
             type="search"
             role="combobox"
-            placeholder="Search repos…"
+            placeholder={t("picker.placeholder")}
             aria-labelledby={labelId}
             aria-autocomplete="list"
             aria-expanded={showList}
@@ -132,12 +134,12 @@ export function RepoPicker({
             <ul
               id={listId}
               role="listbox"
-              aria-label={`${label} results`}
+              aria-label={t("picker.results", { label })}
               className="absolute top-full right-0 left-0 z-50 mt-1 max-h-64 overflow-y-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
             >
               {hits.length === 0 ? (
                 <li className="px-2 py-1.5 text-sm text-muted-foreground">
-                  No matches
+                  {t("common.noMatches")}
                 </li>
               ) : (
                 hits.map((hit, i) => (

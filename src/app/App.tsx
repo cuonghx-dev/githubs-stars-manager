@@ -24,6 +24,8 @@ import {
   type LoadedGraph,
   type LoadGraphResult,
 } from "@/lib/load-graph";
+import type { MessageKey } from "@/lib/i18n";
+import { useT } from "@/lib/i18n/use-i18n";
 import { applyTheme } from "@/lib/theme";
 import { filtersActive, matchesFilters, useAppStore } from "@/lib/store";
 
@@ -39,6 +41,12 @@ export function App() {
   // Apply the theme preference to <html> (NFR-8, T3.9); "system" keeps
   // following the OS scheme until the user picks light or dark.
   useEffect(() => applyTheme(theme), [theme]);
+
+  // Keep <html lang> in step with the UI language for screen readers.
+  const locale = useAppStore((s) => s.locale);
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +76,7 @@ export function App() {
 }
 
 function GraphView({ loaded }: { loaded: LoadedGraph }) {
+  const t = useT();
   const { data, graph } = loaded;
   const repoById = useMemo(
     () => new Map(data.nodes.map((n) => [n.id, n])),
@@ -106,7 +115,12 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
 
   return (
     <AppShell
-      freshness={formatFreshness(data.generatedAt, data.nodes.length)}
+      freshness={formatFreshness(
+        data.generatedAt,
+        data.nodes.length,
+        undefined,
+        t,
+      )}
       freshnessTitle={data.generatedAt}
       search={<SearchBox nodes={data.nodes} />}
       filters={<FilterBar nodes={data.nodes} clusters={data.clusters} />}
@@ -162,21 +176,25 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
 }
 
 function LoadingState() {
+  const t = useT();
   return (
     <main
       className="flex min-h-svh items-center justify-center gap-2 bg-background text-muted-foreground"
       aria-busy="true"
     >
       <LoaderCircle className="size-5 animate-spin" aria-hidden="true" />
-      <span>Loading graph…</span>
+      <span>{t("app.loading")}</span>
     </main>
   );
 }
 
-const EMPTY_TITLES: Record<Exclude<LoadGraphResult["status"], "ok">, string> = {
-  missing: "No graph yet.",
-  invalid: "graph.json is invalid.",
-  "unsupported-version": "graph.json was built by a different version.",
+const EMPTY_TITLES: Record<
+  Exclude<LoadGraphResult["status"], "ok">,
+  MessageKey
+> = {
+  missing: "empty.missing",
+  invalid: "empty.invalid",
+  "unsupported-version": "empty.unsupported",
 };
 
 function EmptyState({
@@ -186,15 +204,16 @@ function EmptyState({
   status: Exclude<LoadGraphResult["status"], "ok">;
   message: string;
 }) {
+  const t = useT();
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-3 bg-background p-6 text-center text-foreground">
       <h1 className="text-2xl font-semibold">Stars Graph</h1>
       <p className="text-muted-foreground">
-        {EMPTY_TITLES[status]} Run{" "}
+        {t(EMPTY_TITLES[status])} {t("empty.runBefore")}{" "}
         <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm">
           pnpm data
         </code>{" "}
-        to build it.
+        {t("empty.runAfter")}
       </p>
       {status !== "missing" && (
         <pre className="max-h-64 max-w-full overflow-auto rounded-md bg-muted p-3 text-left font-mono text-xs whitespace-pre-wrap text-muted-foreground">

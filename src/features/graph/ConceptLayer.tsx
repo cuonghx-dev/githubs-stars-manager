@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { placeConcepts } from "@/features/graph/concept-positions";
 import type { ConceptNode, RepoNode } from "@/lib/graph-schema";
 import type { EdgeAttributes, NodeAttributes } from "@/lib/load-graph";
+import { formatRepoCount } from "@/lib/format";
+import { useT } from "@/lib/i18n/use-i18n";
 import { useAppStore } from "@/lib/store";
 
 // Concept layer (FR-73, T5.7). Enrichment concepts become extra nodes placed at
@@ -24,6 +26,7 @@ export function ConceptLayer({
   concepts: readonly ConceptNode[];
   nodes: readonly RepoNode[];
 }) {
+  const t = useT();
   const sigma = useSigma<NodeAttributes, EdgeAttributes>();
   const show = useAppStore((s) => s.showConcepts);
   const fitNodes = useAppStore((s) => s.fitNodes);
@@ -96,7 +99,7 @@ export function ConceptLayer({
         className="absolute top-0 left-0"
         aria-hidden="true"
       />
-      <ul aria-label="Concepts">
+      <ul aria-label={t("detail.concepts")}>
         {placed.map((c, i) => (
           <li key={c.id}>
             <button
@@ -105,7 +108,10 @@ export function ConceptLayer({
                 labelRefs.current[i] = el;
               }}
               className="pointer-events-auto absolute top-0 left-0 max-w-40 truncate rounded-full border border-violet-500/60 bg-background/85 px-2 py-0.5 text-[11px] font-medium text-violet-700 shadow-sm will-change-transform hover:bg-violet-500/15 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none dark:text-violet-300"
-              title={`${c.label}: ${c.repos.length} repos (click to fit)`}
+              title={t("concepts.nodeTitle", {
+                label: c.label,
+                repos: formatRepoCount(c.repos.length, t),
+              })}
               onClick={() => fitNodes(c.repos)}
             >
               {c.label}

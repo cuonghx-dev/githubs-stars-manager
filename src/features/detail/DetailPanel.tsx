@@ -26,6 +26,7 @@ import {
 import type { SimilarRepo } from "@/features/detail/reasons";
 import { SimilarList } from "@/features/detail/SimilarList";
 import type { Cluster, Enrichment, RepoNode } from "@/lib/graph-schema";
+import { useT } from "@/lib/i18n/use-i18n";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +47,7 @@ export function DetailPanel({
   clusters,
   similar = [],
 }: DetailPanelProps) {
+  const t = useT();
   const homepage = homepageHref(repo.homepage);
   return (
     <article className="flex flex-col gap-4 text-sm" aria-label={repo.id}>
@@ -64,7 +66,7 @@ export function DetailPanel({
           {repo.isArchived && (
             <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-300">
               <Archive className="size-3" aria-hidden="true" />
-              Archived
+              {t("detail.archived")}
             </span>
           )}
         </div>
@@ -73,38 +75,42 @@ export function DetailPanel({
       {repo.enrichment && <EnrichmentSection enrichment={repo.enrichment} />}
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
-        <Fact icon={Star} label="Stars">
-          <span title={repo.stars.toLocaleString("en")}>
-            {formatCount(repo.stars)}
+        <Fact icon={Star} label={t("detail.stars")}>
+          <span title={repo.stars.toLocaleString(t.locale)}>
+            {formatCount(repo.stars, t.locale)}
           </span>
           <span className="text-muted-foreground">
             {" "}
-            · <GitFork className="inline size-3" aria-label="Forks" />{" "}
-            <span title={repo.forks.toLocaleString("en")}>
-              {formatCount(repo.forks)}
+            ·{" "}
+            <GitFork
+              className="inline size-3"
+              aria-label={t("detail.forks")}
+            />{" "}
+            <span title={repo.forks.toLocaleString(t.locale)}>
+              {formatCount(repo.forks, t.locale)}
             </span>
           </span>
         </Fact>
         {repo.language && (
-          <Fact icon={Code} label="Language">
+          <Fact icon={Code} label={t("detail.language")}>
             {repo.language}
           </Fact>
         )}
-        <Fact icon={GitCommitHorizontal} label="Last push">
-          <time dateTime={repo.pushedAt}>{formatDate(repo.pushedAt)}</time>
+        <Fact icon={GitCommitHorizontal} label={t("detail.lastPush")}>
+          <time dateTime={repo.pushedAt}>{formatDate(repo.pushedAt, t)}</time>
         </Fact>
-        <Fact icon={CalendarClock} label="Starred">
-          <time dateTime={repo.starredAt}>{formatDate(repo.starredAt)}</time>
+        <Fact icon={CalendarClock} label={t("detail.starred")}>
+          <time dateTime={repo.starredAt}>{formatDate(repo.starredAt, t)}</time>
         </Fact>
         {repo.license && (
-          <Fact icon={Scale} label="License">
+          <Fact icon={Scale} label={t("detail.license")}>
             {repo.license}
           </Fact>
         )}
       </dl>
 
       {repo.tags && repo.tags.length > 0 && (
-        <section aria-label="Tags">
+        <section aria-label={t("detail.tags")}>
           <ul className="flex flex-wrap gap-1">
             {repo.tags.map((tag) => (
               <li
@@ -120,7 +126,7 @@ export function DetailPanel({
       )}
 
       {repo.topics.length > 0 && (
-        <section aria-label="Topics">
+        <section aria-label={t("detail.topics")}>
           <ul className="flex flex-wrap gap-1">
             {repo.topics.map((topic) => (
               <li
@@ -134,10 +140,10 @@ export function DetailPanel({
         </section>
       )}
 
-      <ul className="flex flex-col gap-1" aria-label="Links">
+      <ul className="flex flex-col gap-1" aria-label={t("detail.links")}>
         <li>
           <ExternalAnchor href={repo.url} icon={ExternalLink}>
-            View on GitHub
+            {t("detail.viewOnGithub")}
           </ExternalAnchor>
         </li>
         {homepage && (
@@ -166,27 +172,28 @@ export function DetailPanel({
 }
 
 function EnrichmentSection({ enrichment }: { enrichment: Enrichment }) {
+  const t = useT();
   const summary = enrichment.summary.trim();
   return (
     <section
       className="flex flex-col gap-2 rounded-md border bg-muted/40 p-2.5"
-      aria-label="Enrichment"
+      aria-label={t("detail.enrichment")}
     >
       <div className="flex flex-wrap items-center gap-1.5">
         <h3 className="flex items-center gap-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
           <Sparkles className="size-3" aria-hidden="true" />
-          Summary
+          {t("detail.summary")}
         </h3>
         <span
           className="rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-xs font-medium"
-          title="Category"
+          title={t("detail.category")}
         >
-          {categoryLabel(enrichment.category)}
+          {categoryLabel(enrichment.category, t)}
         </span>
       </div>
       {summary && <p className="leading-relaxed break-words">{summary}</p>}
       {enrichment.concepts.length > 0 && (
-        <ul className="flex flex-wrap gap-1" aria-label="Concepts">
+        <ul className="flex flex-wrap gap-1" aria-label={t("detail.concepts")}>
           {enrichment.concepts.map((concept) => (
             <li
               key={concept}
@@ -208,7 +215,8 @@ function ClusterChip({
   clusters: readonly Cluster[];
   id: number;
 }) {
-  const cluster = findCluster(clusters, id);
+  const t = useT();
+  const cluster = findCluster(clusters, id, t);
   const active = useAppStore((s) => isOnlyCluster(s.filters.clusters, id));
   const onClick = () => {
     const { filters, setFilters } = useAppStore.getState();
@@ -224,8 +232,8 @@ function ClusterChip({
       aria-pressed={active}
       title={
         active
-          ? "Clear the cluster filter"
-          : `Show only the “${cluster.label}” cluster`
+          ? t("detail.clearCluster")
+          : t("detail.onlyCluster", { label: cluster.label })
       }
       onClick={onClick}
     >

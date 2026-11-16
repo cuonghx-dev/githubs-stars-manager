@@ -9,6 +9,7 @@ import {
   type ConnectedCluster,
 } from "@/features/bridges/rank";
 import type { Cluster, RepoEdge, RepoNode } from "@/lib/graph-schema";
+import { useT } from "@/lib/i18n/use-i18n";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -17,10 +18,6 @@ import { cn } from "@/lib/utils";
 // camera on it; clicking a cluster chip filters the graph to the repo's own
 // cluster plus that one and fits the camera to both, so the bridge is visible.
 
-const betweennessFormat = new Intl.NumberFormat("en", {
-  maximumSignificantDigits: 3,
-});
-
 interface BridgesViewProps {
   clusters: readonly Cluster[];
   nodes: readonly RepoNode[];
@@ -28,6 +25,7 @@ interface BridgesViewProps {
 }
 
 export function BridgesView({ clusters, nodes, edges }: BridgesViewProps) {
+  const t = useT();
   const precomputed = useMemo(() => hasBetweenness(nodes), [nodes]);
   const [sort, setSort] = useState<BridgeSort>(
     precomputed ? "betweenness" : "bridgeScore",
@@ -65,27 +63,25 @@ export function BridgesView({ clusters, nodes, edges }: BridgesViewProps) {
     >
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="bridges-title" className="text-lg font-semibold">
-          Bridges
+          {t("bridges.title")}
         </h2>
         <div
           className="flex items-center gap-1"
           role="group"
-          aria-label="Rank by"
+          aria-label={t("bridges.rankBy")}
         >
-          <span className="mr-1 text-sm text-muted-foreground">Rank by</span>
+          <span className="mr-1 text-sm text-muted-foreground">
+            {t("bridges.rankBy")}
+          </span>
           <Button
             variant={sort === "betweenness" ? "secondary" : "ghost"}
             size="sm"
             aria-pressed={sort === "betweenness"}
             disabled={!precomputed}
-            title={
-              precomputed
-                ? undefined
-                : "graph.json has no betweenness yet; rerun pnpm build-graph"
-            }
+            title={precomputed ? undefined : t("bridges.noBetweenness")}
             onClick={() => setSort("betweenness")}
           >
-            Betweenness
+            {t("bridges.betweenness")}
           </Button>
           <Button
             variant={sort === "bridgeScore" ? "secondary" : "ghost"}
@@ -93,19 +89,16 @@ export function BridgesView({ clusters, nodes, edges }: BridgesViewProps) {
             aria-pressed={sort === "bridgeScore"}
             onClick={() => setSort("bridgeScore")}
           >
-            Bridge score
+            {t("bridges.score")}
           </Button>
         </div>
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
-        Top {TOP_BRIDGES} repos that link clusters. Bridge score counts the
-        distinct clusters among a repo&apos;s neighbours.
+        {t("bridges.intro", { count: TOP_BRIDGES })}
       </p>
 
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No repo links two clusters yet.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("bridges.empty")}</p>
       ) : (
         <ol className="flex flex-col gap-2">
           {rows.map((row, i) => (
@@ -141,6 +134,10 @@ function BridgeItem({
   onShowRepo: () => void;
   onShowLink: (cluster: ConnectedCluster) => void;
 }) {
+  const t = useT();
+  const betweennessFormat = new Intl.NumberFormat(t.locale, {
+    maximumSignificantDigits: 3,
+  });
   return (
     <article
       className={cn(
@@ -152,7 +149,7 @@ function BridgeItem({
         type="button"
         className="-m-1 flex items-baseline gap-2 rounded-md p-1 text-left hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         onClick={onShowRepo}
-        title="Select this repo and centre the camera on it"
+        title={t("common.selectRepoTitle")}
       >
         <span className="w-6 shrink-0 text-right text-sm text-muted-foreground tabular-nums">
           {rank}
@@ -167,12 +164,14 @@ function BridgeItem({
         </span>
         <span className="flex shrink-0 gap-3 text-xs text-muted-foreground tabular-nums">
           {showBetweenness && (
-            <span title="Normalised betweenness centrality">
-              btw {betweennessFormat.format(row.betweenness)}
+            <span title={t("bridges.btwTitle")}>
+              {t("bridges.btw", {
+                value: betweennessFormat.format(row.betweenness),
+              })}
             </span>
           )}
-          <span title="Distinct neighbour clusters">
-            {row.bridgeScore} {row.bridgeScore === 1 ? "cluster" : "clusters"}
+          <span title={t("bridges.neighbourTitle")}>
+            {t("count.clusters", { count: row.bridgeScore })}
           </span>
         </span>
       </button>
@@ -180,7 +179,7 @@ function BridgeItem({
       {row.clusters.length > 0 && (
         <ul
           className="flex flex-wrap gap-1 pl-8"
-          aria-label={`Clusters ${row.repo.id} connects`}
+          aria-label={t("bridges.connects", { id: row.repo.id })}
         >
           {row.clusters.map((cluster) => (
             <li key={cluster.id}>
@@ -193,8 +192,8 @@ function BridgeItem({
                 onClick={() => onShowLink(cluster)}
                 title={
                   cluster.own
-                    ? "Own cluster: filter to it"
-                    : "Filter to this cluster and the repo's own"
+                    ? t("bridges.ownCluster")
+                    : t("bridges.linkCluster")
                 }
               >
                 <span

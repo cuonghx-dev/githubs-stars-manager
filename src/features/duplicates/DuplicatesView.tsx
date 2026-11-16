@@ -2,6 +2,7 @@ import { ExternalLink } from "lucide-react";
 import { useMemo } from "react";
 import config from "../../../config/graph.config";
 import type { Cluster, Duplicate, RepoNode } from "@/lib/graph-schema";
+import { useT } from "@/lib/i18n/use-i18n";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -23,20 +24,17 @@ interface DuplicateRow {
   cosine: number;
 }
 
-const percent = new Intl.NumberFormat("en", {
-  style: "percent",
-  maximumFractionDigits: 1,
-});
-
 export function DuplicatesView({
   duplicates,
   nodes,
   clusters,
 }: DuplicatesViewProps) {
-  const repoById = useMemo(
-    () => new Map(nodes.map((n) => [n.id, n])),
-    [nodes],
-  );
+  const t = useT();
+  const percent = new Intl.NumberFormat(t.locale, {
+    style: "percent",
+    maximumFractionDigits: 1,
+  });
+  const repoById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
   const clusterById = useMemo(
     () => new Map(clusters.map((c) => [c.id, c])),
     [clusters],
@@ -75,22 +73,20 @@ export function DuplicatesView({
     >
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="duplicates-title" className="text-lg font-semibold">
-          Possible duplicates
+          {t("dupes.title")}
         </h2>
         <span className="text-sm text-muted-foreground tabular-nums">
-          {rows.length} {rows.length === 1 ? "pair" : "pairs"}
+          {t("count.pairs", { count: rows.length })}
         </span>
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
-        Pairs whose descriptions and READMEs overlap, with semantic similarity
-        of at least {percent.format(config.duplicateThreshold)}. Click either
-        side to select it on the graph.
+        {t("dupes.intro", {
+          percent: percent.format(config.duplicateThreshold),
+        })}
       </p>
 
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No overlapping pairs. Every star covers its own ground.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("dupes.empty")}</p>
       ) : (
         <ol className="space-y-2">
           {rows.map((row) => (
@@ -106,7 +102,7 @@ export function DuplicatesView({
               />
               <div
                 className="shrink-0 self-start rounded-sm bg-muted px-2 py-1 text-xs font-medium tabular-nums sm:self-center"
-                title={`Cosine similarity ${row.cosine.toFixed(4)}`}
+                title={t("dupes.cosine", { value: row.cosine.toFixed(4) })}
               >
                 {percent.format(row.cosine)}
               </div>
@@ -138,6 +134,7 @@ function RepoSide({
   onSelect: () => void;
   alignEnd?: boolean;
 }) {
+  const t = useT();
   return (
     <div
       className={cn(
@@ -156,7 +153,7 @@ function RepoSide({
           type="button"
           className="min-w-0 truncate rounded-sm text-left font-medium hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           onClick={onSelect}
-          title="Select this repo and centre the camera on it"
+          title={t("common.selectRepoTitle")}
         >
           {repo.id}
         </button>
@@ -165,7 +162,7 @@ function RepoSide({
           target="_blank"
           rel="noreferrer"
           className="shrink-0 rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          aria-label={`Open ${repo.id} on GitHub`}
+          aria-label={t("common.openOnGithub", { id: repo.id })}
         >
           <ExternalLink className="size-3.5" aria-hidden="true" />
         </a>

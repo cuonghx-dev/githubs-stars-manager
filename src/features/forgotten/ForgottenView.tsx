@@ -10,8 +10,11 @@ import {
   type ForgottenSort,
   type ForgottenSortKey,
 } from "@/features/forgotten/rules";
+import { formatCount } from "@/features/detail/repo-details";
 import { formatRelativeTime } from "@/lib/format";
 import type { RepoNode } from "@/lib/graph-schema";
+import type { MessageKey, Translator } from "@/lib/i18n";
+import { useT } from "@/lib/i18n/use-i18n";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -21,54 +24,53 @@ import { cn } from "@/lib/utils";
 
 const rules = config.forgotten;
 
-const REASONS: readonly {
-  id: ForgottenReason;
-  label: string;
-  title: string;
-}[] = [
-  {
-    id: "lonely",
-    label: "Lonely",
-    title: `Starred over ${rules.starredOlderThanDays} days ago with at most ${rules.maxDegree} ${rules.maxDegree === 1 ? "link" : "links"}`,
-  },
-  ...(rules.includeArchived
-    ? [
-        {
-          id: "archived" as const,
-          label: "Archived",
-          title: "Archived by the owner",
-        },
-      ]
-    : []),
-  {
-    id: "stale",
-    label: "Stale",
-    title: `No push in over ${rules.pushedOlderThanDays} days`,
-  },
+const REASON_IDS: readonly ForgottenReason[] = [
+  "lonely",
+  ...(rules.includeArchived ? (["archived"] as const) : []),
+  "stale",
 ];
 
-const REASON_LABEL: Record<ForgottenReason, string> = {
-  lonely: "Lonely",
-  archived: "Archived",
-  stale: "Stale",
+const REASON_LABEL: Record<ForgottenReason, MessageKey> = {
+  lonely: "forgotten.lonely",
+  archived: "forgotten.archived",
+  stale: "forgotten.stale",
 };
+
+/** Plain-language rule behind each reason, from config/graph.config.ts. */
+function reasonTitle(id: ForgottenReason, t: Translator): string {
+  switch (id) {
+    case "lonely":
+      return t("forgotten.lonelyTitle", {
+        days: rules.starredOlderThanDays,
+        count: rules.maxDegree,
+      });
+    case "archived":
+      return t("forgotten.archivedTitle");
+    case "stale":
+      return t("forgotten.staleTitle", { days: rules.pushedOlderThanDays });
+  }
+}
 
 const COLUMNS: readonly {
   key: ForgottenSortKey;
-  label: string;
+  label: MessageKey;
   numeric: boolean;
 }[] = [
-  { key: "repo", label: "Repo", numeric: false },
-  { key: "reasons", label: "Why", numeric: false },
-  { key: "starred", label: "Starred", numeric: true },
-  { key: "pushed", label: "Last push", numeric: true },
-  { key: "degree", label: "Links", numeric: true },
-  { key: "stars", label: "Stars", numeric: true },
+  { key: "repo", label: "forgotten.col.repo", numeric: false },
+  { key: "reasons", label: "forgotten.col.reasons", numeric: false },
+  { key: "starred", label: "forgotten.col.starred", numeric: true },
+  { key: "pushed", label: "forgotten.col.pushed", numeric: true },
+  { key: "degree", label: "forgotten.col.degree", numeric: true },
+  { key: "stars", label: "forgotten.col.stars", numeric: true },
 ];
 
-const countFormat = new Intl.NumberFormat("en", { notation: "compact" });
-
 export function ForgottenView({ nodes }: { nodes: readonly RepoNode[] }) {
+  const t = useT();
+  const reasons = REASON_IDS.map((id) => ({
+    id,
+    label: t(REASON_LABEL[id]),
+    title: reasonTitle(id, t),
+  }));
   // Snapshot "now" once per mount so the list does not shift while open.
   const [now] = useState(() => Date.now());
   const all = useMemo(() => findForgotten(nodes, now), [nodes, now]);
@@ -116,12 +118,12 @@ export function ForgottenView({ nodes }: { nodes: readonly RepoNode[] }) {
     >
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="forgotten-title" className="text-lg font-semibold">
-          Forgotten stars
+          {t("forgotten.title")}
         </h2>
         <div
           className="flex flex-wrap items-center gap-1"
           role="group"
-          aria-label="Show"
+          aria-label={t("forgotten.show")}
         >
           <Button
             variant={reason === null ? "secondary" : "ghost"}
@@ -129,9 +131,9 @@ export function ForgottenView({ nodes }: { nodes: readonly RepoNode[] }) {
             aria-pressed={reason === null}
             onClick={() => setReason(null)}
           >
-            All <span className="tabular-nums">{all.length}</span>
+            {t("common.all")} <span className="tabular-nums">{all.length}</span>
           </Button>
-          {REASONS.map((r) => (
+          {reasons.map((r) => (
             <Button
               key={r.id}
               variant={reason === r.id ? "secondary" : "ghost"}
@@ -146,13 +148,11 @@ export function ForgottenView({ nodes }: { nodes: readonly RepoNode[] }) {
         </div>
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
-        {REASONS.map((r) => `${r.label}: ${r.title.toLowerCase()}`).join(". ")}.
+        {reasons.map((r) => `${r.label}: ${r.title.toLowerCase()}`).join(". ")}.
       </p>
 
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Nothing forgotten. Every star is recent, linked and active.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("forgotten.empty")}</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-sm">
@@ -184,7 +184,7 @@ export function ForgottenView({ nodes }: { nodes: readonly RepoNode[] }) {
                         )}
                         onClick={() => toggleSort(col.key)}
                       >
-                        {col.label}
+                        {t(col.label)}
                         {active &&
                           (sort.asc ? (
                             <ArrowUp className="size-3" aria-hidden="true" />
@@ -212,7 +212,7 @@ export function ForgottenView({ nodes }: { nodes: readonly RepoNode[] }) {
                         type="button"
                         className="min-w-0 truncate rounded-sm text-left font-medium hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         onClick={() => showRepo(row.repo)}
-                        title="Select this repo and centre the camera on it"
+                        title={t("common.selectRepoTitle")}
                       >
                         {row.repo.id}
                       </button>
@@ -221,7 +221,9 @@ export function ForgottenView({ nodes }: { nodes: readonly RepoNode[] }) {
                         target="_blank"
                         rel="noreferrer"
                         className="shrink-0 rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                        aria-label={`Open ${row.repo.id} on GitHub`}
+                        aria-label={t("common.openOnGithub", {
+                          id: row.repo.id,
+                        })}
                       >
                         <ExternalLink className="size-3.5" aria-hidden="true" />
                       </a>
@@ -239,7 +241,7 @@ export function ForgottenView({ nodes }: { nodes: readonly RepoNode[] }) {
                           key={r}
                           className="rounded-sm bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
                         >
-                          {REASON_LABEL[r]}
+                          {t(REASON_LABEL[r])}
                         </span>
                       ))}
                     </div>
@@ -248,19 +250,19 @@ export function ForgottenView({ nodes }: { nodes: readonly RepoNode[] }) {
                     className="px-3 py-2 text-right whitespace-nowrap text-muted-foreground tabular-nums"
                     title={row.repo.starredAt}
                   >
-                    {formatRelativeTime(row.repo.starredAt, new Date(now))}
+                    {formatRelativeTime(row.repo.starredAt, new Date(now), t)}
                   </td>
                   <td
                     className="px-3 py-2 text-right whitespace-nowrap text-muted-foreground tabular-nums"
                     title={row.repo.pushedAt}
                   >
-                    {formatRelativeTime(row.repo.pushedAt, new Date(now))}
+                    {formatRelativeTime(row.repo.pushedAt, new Date(now), t)}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums">
                     {row.repo.metrics.degree}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums">
-                    {countFormat.format(row.repo.stars)}
+                    {formatCount(row.repo.stars, t.locale)}
                   </td>
                 </tr>
               ))}

@@ -7,6 +7,7 @@ import {
   type SearchHit,
 } from "@/features/search/search-index";
 import type { RepoNode } from "@/lib/graph-schema";
+import { useT } from "@/lib/i18n/use-i18n";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ interface SearchBoxProps {
 }
 
 export function SearchBox({ nodes, className }: SearchBoxProps) {
+  const t = useT();
   const index = useMemo(() => buildSearchIndex(nodes), [nodes]);
   const repoById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
   const [query, setQuery] = useState("");
@@ -102,8 +104,8 @@ export function SearchBox({ nodes, className }: SearchBoxProps) {
         ref={inputRef}
         type="search"
         role="combobox"
-        placeholder="Search…"
-        aria-label="Search repositories"
+        placeholder={t("search.placeholder")}
+        aria-label={t("search.label")}
         aria-autocomplete="list"
         aria-expanded={showList}
         aria-controls={listId}
@@ -127,12 +129,12 @@ export function SearchBox({ nodes, className }: SearchBoxProps) {
         <ul
           id={listId}
           role="listbox"
-          aria-label="Search results"
+          aria-label={t("search.results")}
           className="absolute top-full right-0 left-0 z-50 mt-1 max-h-80 overflow-y-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
         >
           {hits.length === 0 ? (
             <li className="px-2 py-1.5 text-sm text-muted-foreground">
-              No matches
+              {t("common.noMatches")}
             </li>
           ) : (
             hits.map((hit, i) => (

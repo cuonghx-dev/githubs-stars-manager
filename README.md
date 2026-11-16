@@ -23,6 +23,8 @@ resurface stars you forgot about, and spot repos that overlap in function.
 - **Timeline and random walk**: replay stars by starred date, or wander the
   graph one weighted step at a time.
 - **Shareable state**: filters, selection and view are kept in the URL.
+- **Languages**: English and Vietnamese UI. The header toggle switches them;
+  the first visit follows the browser language and the choice is remembered.
 - **Optional enrichment**: summaries, categories and concepts written by Claude
   Code, plus a toggleable concept layer.
 

@@ -8,6 +8,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { Cluster, RepoNode } from "@/lib/graph-schema";
+import { type MessageKey, type Translator } from "@/lib/i18n";
+import { useT } from "@/lib/i18n/use-i18n";
 import {
   filtersActive,
   useAppStore,
@@ -38,11 +40,15 @@ interface FilterBarProps {
 }
 
 export function FilterBar({ nodes, clusters, className }: FilterBarProps) {
+  const t = useT();
   const filters = useAppStore((s) => s.filters);
   const setFilters = useAppStore((s) => s.setFilters);
   const clearFilters = useAppStore((s) => s.clearFilters);
 
-  const languageOptions = useMemo(() => languageOptionsOf(nodes), [nodes]);
+  const languageOptions = useMemo(
+    () => languageOptionsOf(nodes, t),
+    [nodes, t],
+  );
   const clusterOptions = useMemo(
     () =>
       [...clusters]
@@ -60,13 +66,13 @@ export function FilterBar({ nodes, clusters, className }: FilterBarProps) {
   return (
     <div className={cn("flex items-center gap-1.5", className)}>
       <MultiSelectFilter
-        label="Language"
+        label={t("filter.language")}
         options={languageOptions}
         selected={filters.languages}
         onChange={(languages) => setFilters({ languages })}
       />
       <MultiSelectFilter
-        label="Cluster"
+        label={t("filter.cluster")}
         options={clusterOptions}
         selected={filters.clusters}
         onChange={(ids) => setFilters({ clusters: ids })}
@@ -81,13 +87,13 @@ export function FilterBar({ nodes, clusters, className }: FilterBarProps) {
         size="icon-sm"
         aria-label={
           filters.mode === "hide"
-            ? "Unmatched repos hidden; show them faded"
-            : "Unmatched repos faded; hide them"
+            ? t("filter.modeHideAria")
+            : t("filter.modeFadeAria")
         }
         title={
           filters.mode === "hide"
-            ? "Hiding unmatched repos (click to fade)"
-            : "Fading unmatched repos (click to hide)"
+            ? t("filter.modeHideTitle")
+            : t("filter.modeFadeTitle")
         }
         aria-pressed={filters.mode === "hide"}
         onClick={() =>
@@ -99,14 +105,17 @@ export function FilterBar({ nodes, clusters, className }: FilterBarProps) {
       {active && (
         <Button variant="ghost" size="sm" onClick={clearFilters}>
           <X data-icon="inline-start" />
-          Clear
+          {t("common.clear")}
         </Button>
       )}
     </div>
   );
 }
 
-function languageOptionsOf(nodes: readonly RepoNode[]): Option<string>[] {
+function languageOptionsOf(
+  nodes: readonly RepoNode[],
+  t: Translator,
+): Option<string>[] {
   const counts = new Map<string, number>();
   for (const repo of nodes) {
     const lang = repo.language ?? NO_LANGUAGE;
@@ -116,7 +125,7 @@ function languageOptionsOf(nodes: readonly RepoNode[]): Option<string>[] {
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([value, count]) => ({
       value,
-      label: value === NO_LANGUAGE ? "No language" : value,
+      label: value === NO_LANGUAGE ? t("filter.noLanguage") : value,
       count,
     }));
 }
@@ -156,6 +165,7 @@ function MultiSelectFilter<T extends string | number>({
   selected: readonly T[];
   onChange: (next: T[]) => void;
 }) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
   const visible =
@@ -184,8 +194,10 @@ function MultiSelectFilter<T extends string | number>({
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Filter ${label.toLowerCase()}…`}
-            aria-label={`Filter ${label.toLowerCase()} options`}
+            placeholder={t("filter.optionsPlaceholder", {
+              label: label.toLowerCase(),
+            })}
+            aria-label={t("filter.optionsAria", { label: label.toLowerCase() })}
           />
         )}
         <ul
@@ -218,7 +230,9 @@ function MultiSelectFilter<T extends string | number>({
             </li>
           ))}
           {visible.length === 0 && (
-            <li className="px-2 py-1 text-muted-foreground">No matches</li>
+            <li className="px-2 py-1 text-muted-foreground">
+              {t("common.noMatches")}
+            </li>
           )}
         </ul>
         {selected.length > 0 && (
@@ -228,7 +242,7 @@ function MultiSelectFilter<T extends string | number>({
             className="self-start"
             onClick={() => onChange([])}
           >
-            Clear {label.toLowerCase()}
+            {t("filter.clearOne", { label: label.toLowerCase() })}
           </Button>
         )}
       </PopoverContent>
@@ -236,11 +250,20 @@ function MultiSelectFilter<T extends string | number>({
   );
 }
 
-const ARCHIVED_OPTIONS: readonly { value: ArchivedFilter; label: string }[] = [
-  { value: "include", label: "Include archived" },
-  { value: "exclude", label: "Exclude archived" },
-  { value: "only", label: "Only archived" },
+const ARCHIVED_OPTIONS: readonly {
+  value: ArchivedFilter;
+  label: MessageKey;
+}[] = [
+  { value: "include", label: "filter.archived.include" },
+  { value: "exclude", label: "filter.archived.exclude" },
+  { value: "only", label: "filter.archived.only" },
 ];
+
+const ARCHIVED_BADGE: Record<ArchivedFilter, MessageKey | undefined> = {
+  include: undefined,
+  exclude: "filter.archivedBadge.exclude",
+  only: "filter.archivedBadge.only",
+};
 
 function ArchivedFilterButton({
   value,
@@ -249,16 +272,18 @@ function ArchivedFilterButton({
   value: ArchivedFilter;
   onChange: (value: ArchivedFilter) => void;
 }) {
+  const t = useT();
+  const badge = ARCHIVED_BADGE[value];
   return (
     <Popover>
       <FilterTrigger
-        label="Archived"
-        badge={value === "include" ? undefined : value}
+        label={t("filter.archived")}
+        badge={badge === undefined ? undefined : t(badge)}
         active={value !== "include"}
       />
       <PopoverContent className="w-52 p-2">
         <fieldset className="flex flex-col">
-          <legend className="sr-only">Archived repos</legend>
+          <legend className="sr-only">{t("filter.archivedLegend")}</legend>
           {ARCHIVED_OPTIONS.map((o) => (
             <label
               key={o.value}
@@ -271,7 +296,7 @@ function ArchivedFilterButton({
                 checked={value === o.value}
                 onChange={() => onChange(o.value)}
               />
-              {o.label}
+              {t(o.label)}
             </label>
           ))}
         </fieldset>
@@ -287,6 +312,7 @@ function StarredFilterButton({
   filters: Filters;
   onChange: (patch: Partial<Filters>) => void;
 }) {
+  const t = useT();
   const from = filters.starredFrom?.slice(0, 10) ?? "";
   const to = filters.starredTo?.slice(0, 10) ?? "";
   const active = from !== "" || to !== "";
@@ -294,16 +320,20 @@ function StarredFilterButton({
 
   return (
     <Popover>
-      <FilterTrigger label="Starred" badge={badge} active={active} />
+      <FilterTrigger
+        label={t("filter.starred")}
+        badge={badge}
+        active={active}
+      />
       <PopoverContent className="flex w-60 flex-col gap-2">
         <DateField
-          label="From"
+          label={t("filter.from")}
           value={from}
           max={to || undefined}
           onChange={(v) => onChange({ starredFrom: v || null })}
         />
         <DateField
-          label="To"
+          label={t("filter.to")}
           value={to}
           min={from || undefined}
           onChange={(v) => onChange({ starredTo: v || null })}
@@ -315,7 +345,7 @@ function StarredFilterButton({
             className="self-start"
             onClick={() => onChange({ starredFrom: null, starredTo: null })}
           >
-            Clear dates
+            {t("filter.clearDates")}
           </Button>
         )}
       </PopoverContent>
@@ -355,6 +385,7 @@ function DateField({
  * Renders nothing while at least one repo matches.
  */
 export function NoResults({ matchCount }: { matchCount: number }) {
+  const t = useT();
   const active = useAppStore((s) => filtersActive(s.filters));
   const clearFilters = useAppStore((s) => s.clearFilters);
   if (!active || matchCount > 0) return null;
@@ -364,10 +395,10 @@ export function NoResults({ matchCount }: { matchCount: number }) {
         className="pointer-events-auto flex flex-col items-center gap-3 rounded-lg border bg-background/95 p-6 text-center shadow-sm"
         role="status"
       >
-        <p className="font-medium">No repos match these filters.</p>
+        <p className="font-medium">{t("filter.noResults")}</p>
         <Button variant="outline" size="sm" onClick={clearFilters}>
           <X data-icon="inline-start" />
-          Clear filters
+          {t("filter.clearAll")}
         </Button>
       </div>
     </div>

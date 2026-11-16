@@ -1,6 +1,5 @@
 import { bidirectional } from "graphology-shortest-path/dijkstra";
-import { edgeReason } from "@/features/detail/reasons";
-import type { RepoEdge, RepoNode } from "@/lib/graph-schema";
+import type { EdgeSignals, RepoEdge, RepoNode } from "@/lib/graph-schema";
 import type { EdgeAttributes, RepoGraph } from "@/lib/load-graph";
 
 // Path finder (FR-61, T4.6): weighted shortest path between two repos and the
@@ -30,7 +29,7 @@ export function findPath(
 export interface PathStep {
   repo: RepoNode;
   /** Link from the previous step; absent on the first step. */
-  link?: { weight: number; reason: string };
+  link?: { weight: number; signals: EdgeSignals };
 }
 
 /** Order-independent key for an undirected edge. */
@@ -45,7 +44,7 @@ export function indexEdges(
   return new Map(edges.map((e) => [pairKey(e.source, e.target), e]));
 }
 
-/** Steps for a node path, each with the reason it links to the previous. */
+/** Steps for a node path, each with the edge that links it to the previous. */
 export function pathSteps(
   path: readonly string[],
   repoById: ReadonlyMap<string, RepoNode>,
@@ -62,7 +61,7 @@ export function pathSteps(
       edge
         ? {
             repo,
-            link: { weight: edge.weight, reason: edgeReason(edge.signals) },
+            link: { weight: edge.weight, signals: edge.signals },
           }
         : { repo },
     );

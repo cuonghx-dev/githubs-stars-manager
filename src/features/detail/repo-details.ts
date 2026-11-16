@@ -1,4 +1,5 @@
 import type { Cluster, EnrichmentCategory } from "@/lib/graph-schema";
+import { enT, type Translator } from "@/lib/i18n";
 
 // Pure helpers for the repo detail panel (T3.4, FR-40/FR-41/FR-43). Kept out
 // of the component so they can be unit-tested without a DOM.
@@ -12,10 +13,10 @@ export function formatCount(n: number, locale = "en"): string {
 }
 
 /** Calendar date for an ISO timestamp, e.g. "Jan 2, 2020" (UTC). */
-export function formatDate(iso: string, locale = "en"): string {
+export function formatDate(iso: string, t: Translator = enT): string {
   const ms = Date.parse(iso);
-  if (!Number.isFinite(ms)) return "unknown";
-  return new Intl.DateTimeFormat(locale, {
+  if (!Number.isFinite(ms)) return t("detail.unknownDate");
+  return new Intl.DateTimeFormat(t.locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -50,11 +51,16 @@ export function homepageLabel(href: string): string {
 }
 
 /** Cluster for a repo; falls back to a grey "Unclustered" entry. */
-export function findCluster(clusters: readonly Cluster[], id: number): Cluster {
+export function findCluster(
+  clusters: readonly Cluster[],
+  id: number,
+  t: Translator = enT,
+): Cluster {
   return (
     clusters.find((c) => c.id === id) ?? {
       id,
-      label: id === -1 ? "Unclustered" : `Cluster ${id}`,
+      label:
+        id === -1 ? t("cluster.unclustered") : t("cluster.fallback", { id }),
       color: "#9ca3af",
       size: 0,
     }
@@ -80,18 +86,10 @@ export function toggleClusterFilter(
   return isOnlyCluster(filterClusters, id) ? [] : [id];
 }
 
-const CATEGORY_LABELS: Record<EnrichmentCategory, string> = {
-  library: "Library",
-  framework: "Framework",
-  tool: "Tool",
-  app: "App",
-  "awesome-list": "Awesome list",
-  learning: "Learning",
-  dataset: "Dataset",
-  other: "Other",
-};
-
 /** Display label for an enrichment category (FR-44), e.g. "awesome-list" → "Awesome list". */
-export function categoryLabel(category: EnrichmentCategory): string {
-  return CATEGORY_LABELS[category];
+export function categoryLabel(
+  category: EnrichmentCategory,
+  t: Translator = enT,
+): string {
+  return t(`category.${category}`);
 }

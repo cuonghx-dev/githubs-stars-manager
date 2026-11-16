@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { RepoNode } from "@/lib/graph-schema";
 import { formatRepoCount } from "@/lib/format";
+import { useT } from "@/lib/i18n/use-i18n";
 import { useAppStore } from "@/lib/store";
 
 // Timeline slider (FR-64, T4.9): show only repos starred up to day T, with
@@ -21,6 +22,7 @@ interface TimelineSliderProps {
 }
 
 export function TimelineSlider({ nodes }: TimelineSliderProps) {
+  const t = useT();
   const starredFrom = useAppStore((s) => s.filters.starredFrom);
   const starredTo = useAppStore((s) => s.filters.starredTo);
   const setFilters = useAppStore((s) => s.setFilters);
@@ -96,13 +98,13 @@ export function TimelineSlider({ nodes }: TimelineSliderProps) {
   return (
     <footer
       className="flex items-center gap-3 border-t px-3 py-2 text-sm"
-      aria-label="Timeline"
+      aria-label={t("timeline.label")}
     >
       <Button
         variant="ghost"
         size="icon-sm"
-        aria-label={playing ? "Pause timeline" : "Play timeline"}
-        title={playing ? "Pause" : "Play: grow the graph by starred date"}
+        aria-label={playing ? t("timeline.pause") : t("timeline.play")}
+        title={playing ? t("timeline.pauseTitle") : t("timeline.playTitle")}
         aria-pressed={playing}
         onClick={togglePlay}
       >
@@ -118,8 +120,12 @@ export function TimelineSlider({ nodes }: TimelineSliderProps) {
         max={last}
         step={1}
         value={index}
-        aria-label="Starred up to"
-        aria-valuetext={atEnd ? "All dates" : `Up to ${days[index]}`}
+        aria-label={t("timeline.slider")}
+        aria-valuetext={
+          atEnd
+            ? t("timeline.allDates")
+            : t("timeline.upTo", { day: days[index] ?? "" })
+        }
         onChange={(e) => {
           setPlaying(false);
           setIndex(Number(e.target.value));
@@ -127,14 +133,16 @@ export function TimelineSlider({ nodes }: TimelineSliderProps) {
       />
       <span
         className="shrink-0 whitespace-nowrap tabular-nums"
-        title="Repos starred up to this date"
+        title={t("timeline.countTitle")}
       >
         <span className={atEnd ? "text-muted-foreground" : "font-medium"}>
-          {atEnd ? "All" : `Up to ${days[index]}`}
+          {atEnd
+            ? t("common.all")
+            : t("timeline.upTo", { day: days[index] ?? "" })}
         </span>
         <span className="text-muted-foreground">
           {" · "}
-          {formatRepoCount(shown)}
+          {formatRepoCount(shown, t)}
         </span>
       </span>
     </footer>
