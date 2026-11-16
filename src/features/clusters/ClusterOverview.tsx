@@ -5,7 +5,10 @@ import {
   summarizeClusters,
   type ClusterSummary,
 } from "@/features/clusters/summarize";
+import { formatCount } from "@/features/detail/repo-details";
+import { formatRepoCount } from "@/lib/format";
 import type { Cluster, RepoNode } from "@/lib/graph-schema";
+import { useT } from "@/lib/i18n/use-i18n";
 import { EMPTY_FILTERS, useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -14,17 +17,16 @@ import { cn } from "@/lib/utils";
 // filters to it, fits the camera to its members and returns to the graph;
 // clicking a repo selects it and centres the camera on it.
 
-const starFormat = new Intl.NumberFormat("en", { notation: "compact" });
-
 interface ClusterOverviewProps {
   clusters: readonly Cluster[];
   nodes: readonly RepoNode[];
 }
 
 export function ClusterOverview({ clusters, nodes }: ClusterOverviewProps) {
+  const t = useT();
   const summaries = useMemo(
-    () => summarizeClusters(clusters, nodes),
-    [clusters, nodes],
+    () => summarizeClusters(clusters, nodes, t),
+    [clusters, nodes, t],
   );
   const activeClusters = useAppStore((s) => s.filters.clusters);
 
@@ -50,11 +52,12 @@ export function ClusterOverview({ clusters, nodes }: ClusterOverviewProps) {
     >
       <div className="mb-4 flex items-baseline justify-between gap-2">
         <h2 id="cluster-overview-title" className="text-lg font-semibold">
-          Clusters
+          {t("clusters.title")}
         </h2>
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">
-            {summaries.length} clusters · {nodes.length} repos
+            {t("count.clusters", { count: summaries.length })} ·{" "}
+            {formatRepoCount(nodes.length, t)}
           </p>
           {activeClusters.length > 0 && (
             <Button
@@ -67,14 +70,14 @@ export function ClusterOverview({ clusters, nodes }: ClusterOverviewProps) {
               }
             >
               <X data-icon="inline-start" />
-              Clear cluster filter
+              {t("clusters.clearFilter")}
             </Button>
           )}
         </div>
       </div>
 
       {summaries.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No clusters yet.</p>
+        <p className="text-sm text-muted-foreground">{t("clusters.empty")}</p>
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-3">
           {summaries.map((summary) => (
@@ -104,6 +107,7 @@ function ClusterCard({
   onShowCluster: () => void;
   onShowRepo: (repo: RepoNode) => void;
 }) {
+  const t = useT();
   return (
     <article
       className={cn(
@@ -115,7 +119,7 @@ function ClusterCard({
         type="button"
         className="-m-1 flex items-start gap-2 rounded-md p-1 text-left hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         onClick={onShowCluster}
-        title="Filter to this cluster and fit the camera"
+        title={t("clusters.cardTitle")}
       >
         <span
           className="mt-1.5 size-2.5 shrink-0 rounded-full"
@@ -125,13 +129,16 @@ function ClusterCard({
         <span className="min-w-0 flex-1">
           <span className="block truncate font-medium">{summary.label}</span>
           <span className="block text-xs text-muted-foreground">
-            {summary.size} {summary.size === 1 ? "repo" : "repos"}
+            {formatRepoCount(summary.size, t)}
           </span>
         </span>
       </button>
 
       {summary.languages.length > 0 && (
-        <ul className="flex flex-wrap gap-1" aria-label="Top languages">
+        <ul
+          className="flex flex-wrap gap-1"
+          aria-label={t("clusters.topLanguages")}
+        >
           {summary.languages.map((lang) => (
             <li
               key={lang.name}
@@ -143,7 +150,7 @@ function ClusterCard({
         </ul>
       )}
 
-      <ol className="flex flex-col text-sm" aria-label="Top repos by stars">
+      <ol className="flex flex-col text-sm" aria-label={t("clusters.topRepos")}>
         {summary.topRepos.map((repo) => (
           <li key={repo.id}>
             <button
@@ -154,7 +161,7 @@ function ClusterCard({
               <span className="min-w-0 flex-1 truncate">{repo.id}</span>
               <span className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground tabular-nums">
                 <Star className="size-3" aria-hidden="true" />
-                {starFormat.format(repo.stars)}
+                {formatCount(repo.stars, t.locale)}
               </span>
             </button>
           </li>

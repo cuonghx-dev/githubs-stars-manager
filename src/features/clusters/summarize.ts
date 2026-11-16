@@ -1,4 +1,5 @@
 import type { Cluster, RepoNode } from "@/lib/graph-schema";
+import { enT, type Translator } from "@/lib/i18n";
 
 // Per-cluster stats for the cluster overview (FR-66, T3.8). Pure so it stays
 // testable without React.
@@ -27,6 +28,7 @@ export interface ClusterSummary {
 export function summarizeClusters(
   clusters: readonly Cluster[],
   nodes: readonly RepoNode[],
+  t: Translator = enT,
 ): ClusterSummary[] {
   const members = new Map<number, RepoNode[]>();
   for (const node of nodes) {
@@ -51,7 +53,7 @@ export function summarizeClusters(
       id,
       label:
         cluster?.label.trim() ||
-        (id < 0 ? "Unclustered" : `Cluster ${String(id)}`),
+        (id < 0 ? t("cluster.unclustered") : t("cluster.fallback", { id })),
       color: cluster?.color ?? "#a3a3a3",
       size: repos.length,
       languages: [...languageCounts]

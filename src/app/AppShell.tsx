@@ -4,6 +4,7 @@ import {
   Footprints,
   Clock,
   Keyboard,
+  Languages,
   Menu,
   Monitor,
   Moon,
@@ -28,6 +29,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useMediaQuery, WIDE_QUERY } from "@/hooks/use-media-query";
+import {
+  LOCALE_NAMES,
+  LOCALE_SHORT,
+  nextLocale,
+  type MessageKey,
+} from "@/lib/i18n";
+import { useT } from "@/lib/i18n/use-i18n";
 import { useAppStore, type ThemePreference, type ViewId } from "@/lib/store";
 import { nextThemePreference } from "@/lib/theme";
 
@@ -45,22 +53,27 @@ export type { ViewId };
 
 interface ViewItem {
   id: ViewId;
-  label: string;
+  label: MessageKey;
   icon: LucideIcon;
   /** False until the view ships (M3 T3.8, M4). */
   available: boolean;
 }
 
 const VIEWS: readonly ViewItem[] = [
-  { id: "graph", label: "Graph", icon: Network, available: true },
-  { id: "clusters", label: "Clusters", icon: Shapes, available: true },
-  { id: "bridges", label: "Bridges", icon: Waypoints, available: true },
-  { id: "forgotten", label: "Forgotten", icon: Clock, available: true },
-  { id: "dupes", label: "Dupes", icon: Copy, available: true },
-  { id: "path", label: "Path", icon: Route, available: true },
+  { id: "graph", label: "view.graph", icon: Network, available: true },
+  { id: "clusters", label: "view.clusters", icon: Shapes, available: true },
+  { id: "bridges", label: "view.bridges", icon: Waypoints, available: true },
+  { id: "forgotten", label: "view.forgotten", icon: Clock, available: true },
+  { id: "dupes", label: "view.dupes", icon: Copy, available: true },
+  { id: "path", label: "view.path", icon: Route, available: true },
 ];
 
-const FILTERS = ["Language", "Cluster", "Archived", "Starred"] as const;
+const FILTERS: readonly MessageKey[] = [
+  "filter.language",
+  "filter.cluster",
+  "filter.archived",
+  "filter.starred",
+];
 
 interface AppShellProps {
   /** Header freshness line, e.g. "Generated 3 days ago · 812 repos" (FR-37). */
@@ -95,6 +108,7 @@ export function AppShell({
   detailOpen: detailOpenProp,
   onDetailOpenChange,
 }: AppShellProps) {
+  const t = useT();
   const wide = useMediaQuery(WIDE_QUERY);
   const view = useAppStore((s) => s.view);
   const setView = useAppStore((s) => s.setView);
@@ -115,7 +129,7 @@ export function AppShell({
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Open menu"
+            aria-label={t("shell.openMenu")}
             onClick={() => setMenuOpen(true)}
           >
             <Menu />
@@ -136,18 +150,25 @@ export function AppShell({
             </p>
           )}
           <ShortcutsButton />
+          <LanguageToggle />
           <ThemeToggle />
         </div>
       </header>
 
       <div className="flex min-h-0 flex-1">
         {wide && (
-          <aside className="w-44 shrink-0 border-r p-2" aria-label="Views">
+          <aside
+            className="w-44 shrink-0 border-r p-2"
+            aria-label={t("nav.views")}
+          >
             <ViewNav active={view} onSelect={selectView} />
           </aside>
         )}
 
-        <main className="relative min-w-0 flex-1" aria-label="Repository graph">
+        <main
+          className="relative min-w-0 flex-1"
+          aria-label={t("shell.graphRegion")}
+        >
           {children}
           {!wide && (
             <Button
@@ -157,7 +178,7 @@ export function AppShell({
               onClick={() => setDetailOpen(true)}
             >
               <PanelBottomOpen data-icon="inline-start" />
-              Details
+              {t("shell.details")}
             </Button>
           )}
         </main>
@@ -165,7 +186,7 @@ export function AppShell({
         {wide && (
           <aside
             className="w-80 shrink-0 overflow-y-auto border-l p-4"
-            aria-label="Repo detail"
+            aria-label={t("shell.repoDetail")}
           >
             <DetailBody detail={detail} />
           </aside>
@@ -184,12 +205,12 @@ export function AppShell({
                   {freshness}
                 </SheetDescription>
               </SheetHeader>
-              <nav className="px-2" aria-label="Views">
+              <nav className="px-2" aria-label={t("nav.views")}>
                 <ViewNav active={view} onSelect={selectView} />
               </nav>
               <div className="mt-4 border-t px-4 pt-4">
                 <p className="mb-2 text-xs font-medium text-muted-foreground">
-                  Filters
+                  {t("shell.filters")}
                 </p>
                 <div className="[&>div]:flex-wrap">
                   {filters ?? <FilterPlaceholder />}
@@ -201,9 +222,9 @@ export function AppShell({
           <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
             <SheetContent side="bottom" className="max-h-[70svh] gap-0">
               <SheetHeader>
-                <SheetTitle>Repo detail</SheetTitle>
+                <SheetTitle>{t("shell.repoDetail")}</SheetTitle>
                 <SheetDescription className="sr-only">
-                  Details of the selected repository
+                  {t("shell.repoDetailDesc")}
                 </SheetDescription>
               </SheetHeader>
               <div className="overflow-y-auto px-4 pb-4">
@@ -218,6 +239,7 @@ export function AppShell({
 }
 
 function SearchPlaceholder() {
+  const t = useT();
   return (
     <div className="relative">
       <Search
@@ -226,8 +248,8 @@ function SearchPlaceholder() {
       />
       <Input
         type="search"
-        placeholder="Search…"
-        aria-label="Search repositories"
+        placeholder={t("search.placeholder")}
+        aria-label={t("search.label")}
         className="pl-8"
         disabled
       />
@@ -236,6 +258,7 @@ function SearchPlaceholder() {
 }
 
 function FilterPlaceholder() {
+  const t = useT();
   return (
     <div className="flex items-center gap-1.5">
       {FILTERS.map((label) => (
@@ -244,9 +267,9 @@ function FilterPlaceholder() {
           variant="outline"
           size="sm"
           disabled
-          title="Coming soon"
+          title={t("common.comingSoon")}
         >
-          {label}
+          {t(label)}
           <ChevronDown data-icon="inline-end" />
         </Button>
       ))}
@@ -261,6 +284,7 @@ function ViewNav({
   active: ViewId;
   onSelect: (id: ViewId) => void;
 }) {
+  const t = useT();
   return (
     <ul className="flex flex-col gap-0.5">
       {VIEWS.map(({ id, label, icon: Icon, available }) => (
@@ -270,11 +294,11 @@ function ViewNav({
             className="w-full justify-start"
             aria-current={active === id ? "page" : undefined}
             disabled={!available}
-            title={available ? undefined : "Coming soon"}
+            title={available ? undefined : t("common.comingSoon")}
             onClick={() => onSelect(id)}
           >
             <Icon data-icon="inline-start" />
-            {label}
+            {t(label)}
           </Button>
         </li>
       ))}
@@ -283,22 +307,24 @@ function ViewNav({
 }
 
 function DetailBody({ detail }: { detail: ReactNode }) {
+  const t = useT();
   if (detail) return detail;
   return (
     <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
       <Footprints className="size-5" aria-hidden="true" />
-      <p>Select a repo on the graph to see its details and similar repos.</p>
+      <p>{t("shell.detailEmpty")}</p>
     </div>
   );
 }
 
 function TimelineBar() {
+  const t = useT();
   return (
     <footer
       className="flex items-center gap-3 border-t px-3 py-2 text-sm text-muted-foreground"
-      aria-label="Timeline"
+      aria-label={t("timeline.label")}
     >
-      <span className="shrink-0 font-medium">Timeline</span>
+      <span className="shrink-0 font-medium">{t("timeline.label")}</span>
       <div
         className="h-1 min-w-0 flex-1 rounded-full bg-muted"
         aria-hidden="true"
@@ -306,8 +332,8 @@ function TimelineBar() {
       <Button
         variant="ghost"
         size="icon-sm"
-        aria-label="Play timeline"
-        title="Coming soon"
+        aria-label={t("timeline.play")}
+        title={t("common.comingSoon")}
         disabled
       >
         <Play />
@@ -316,25 +342,29 @@ function TimelineBar() {
   );
 }
 
-const THEME_META: Record<ThemePreference, { label: string; icon: LucideIcon }> =
-  {
-    system: { label: "System", icon: Monitor },
-    light: { label: "Light", icon: Sun },
-    dark: { label: "Dark", icon: Moon },
-  };
+const THEME_META: Record<
+  ThemePreference,
+  { label: MessageKey; icon: LucideIcon }
+> = {
+  system: { label: "theme.system", icon: Monitor },
+  light: { label: "theme.light", icon: Sun },
+  dark: { label: "theme.dark", icon: Moon },
+};
 
 /** Cycles system → light → dark; the choice is persisted by the store. */
 function ThemeToggle() {
+  const t = useT();
   const theme = useAppStore((s) => s.theme);
   const setTheme = useAppStore((s) => s.setTheme);
-  const { label, icon: Icon } = THEME_META[theme];
-  const next = THEME_META[nextThemePreference(theme)].label;
+  const { label: labelKey, icon: Icon } = THEME_META[theme];
+  const label = t(labelKey);
+  const next = t(THEME_META[nextThemePreference(theme)].label);
   return (
     <Button
       variant="ghost"
       size="icon"
-      aria-label={`Theme: ${label}. Switch to ${next}`}
-      title={`Theme: ${label} (click for ${next})`}
+      aria-label={t("theme.aria", { label, next })}
+      title={t("theme.title", { label, next })}
       onClick={() => setTheme(nextThemePreference(theme))}
     >
       <Icon />
@@ -342,16 +372,39 @@ function ThemeToggle() {
   );
 }
 
+/** Cycles the UI language (English ↔ Vietnamese); persisted by the store. */
+function LanguageToggle() {
+  const t = useT();
+  const locale = useAppStore((s) => s.locale);
+  const setLocale = useAppStore((s) => s.setLocale);
+  const next = nextLocale(locale);
+  const vars = { label: LOCALE_NAMES[locale], next: LOCALE_NAMES[next] };
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="px-2"
+      aria-label={t("language.aria", vars)}
+      title={t("language.title", vars)}
+      onClick={() => setLocale(next)}
+    >
+      <Languages data-icon="inline-start" />
+      <span className="text-xs font-medium">{LOCALE_SHORT[locale]}</span>
+    </Button>
+  );
+}
+
 /** Opens the keyboard shortcut dialog (T3.10); same as pressing `?`. */
 function ShortcutsButton() {
+  const t = useT();
   const setOpen = useAppStore((s) => s.setShortcutsOpen);
   return (
     <Button
       variant="ghost"
       size="icon"
-      aria-label="Keyboard shortcuts"
+      aria-label={t("shortcuts.button")}
       aria-keyshortcuts="?"
-      title="Keyboard shortcuts (?)"
+      title={t("shortcuts.buttonTitle")}
       onClick={() => setOpen(true)}
     >
       <Keyboard />

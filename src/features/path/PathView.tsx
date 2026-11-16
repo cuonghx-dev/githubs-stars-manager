@@ -8,8 +8,10 @@ import {
   type PathStep,
 } from "@/features/path/find-path";
 import { RepoPicker } from "@/features/path/RepoPicker";
+import { edgeReason } from "@/features/detail/reasons";
 import { buildSearchIndex } from "@/features/search/search-index";
 import type { RepoEdge, RepoNode } from "@/lib/graph-schema";
+import { useT } from "@/lib/i18n/use-i18n";
 import type { RepoGraph } from "@/lib/load-graph";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -26,6 +28,7 @@ interface PathViewProps {
 }
 
 export function PathView({ graph, nodes, edges }: PathViewProps) {
+  const t = useT();
   const index = useMemo(() => buildSearchIndex(nodes), [nodes]);
   const repoById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
   const edgeByPair = useMemo(() => indexEdges(edges), [edges]);
@@ -71,20 +74,20 @@ export function PathView({ graph, nodes, edges }: PathViewProps) {
       aria-labelledby="path-title"
     >
       <h2 id="path-title" className="text-base font-semibold">
-        Path finder
+        {t("path.title")}
       </h2>
 
       <div className="flex items-end gap-2">
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <RepoPicker
-            label="From"
+            label={t("path.from")}
             value={from}
             onChange={(id) => setEnds({ from: id })}
             index={index}
             repoById={repoById}
           />
           <RepoPicker
-            label="To"
+            label={t("path.to")}
             value={to}
             onChange={(id) => setEnds({ to: id })}
             index={index}
@@ -94,8 +97,8 @@ export function PathView({ graph, nodes, edges }: PathViewProps) {
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label="Swap from and to"
-          title="Swap"
+          aria-label={t("path.swap")}
+          title={t("path.swapTitle")}
           disabled={from === null && to === null}
           onClick={() => setEnds({ from: to, to: from })}
         >
@@ -104,24 +107,20 @@ export function PathView({ graph, nodes, edges }: PathViewProps) {
       </div>
 
       {from === null || to === null ? (
-        <p className="text-sm text-muted-foreground">
-          Pick two repos to see how they connect.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("path.pickTwo")}</p>
       ) : from === to ? (
         <p className="text-sm text-muted-foreground">
-          Pick two different repos.
+          {t("path.pickDifferent")}
         </p>
       ) : path === null ? (
         <p className="text-sm" role="status">
-          <span className="font-medium">Not connected.</span>{" "}
-          <span className="text-muted-foreground">
-            No chain of related repos links these two.
-          </span>
+          <span className="font-medium">{t("path.notConnected")}</span>{" "}
+          <span className="text-muted-foreground">{t("path.noChain")}</span>
         </p>
       ) : (
         <div className="flex flex-col gap-2">
           <p className="text-xs text-muted-foreground" role="status">
-            {steps.length - 1} {steps.length - 1 === 1 ? "hop" : "hops"}
+            {t("count.hops", { count: steps.length - 1 })}
           </p>
           <ol className="flex flex-col">
             {steps.map((step, i) => (
@@ -144,7 +143,8 @@ export function PathView({ graph, nodes, edges }: PathViewProps) {
                 <div className="min-w-0 flex-1 pb-2">
                   {step.link && (
                     <p className="mb-0.5 text-xs text-muted-foreground">
-                      {step.link.reason} · w {step.link.weight.toFixed(2)}
+                      {edgeReason(step.link.signals, t)} · w{" "}
+                      {step.link.weight.toFixed(2)}
                     </p>
                   )}
                   <button
@@ -154,7 +154,7 @@ export function PathView({ graph, nodes, edges }: PathViewProps) {
                       selected === step.repo.id && "font-medium text-primary",
                     )}
                     onClick={() => showStep(step)}
-                    title="Select and centre this repo"
+                    title={t("path.stepTitle")}
                   >
                     {step.repo.id}
                   </button>

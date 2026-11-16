@@ -1,4 +1,8 @@
+import { enT, type Translator } from "@/lib/i18n";
+
 // Display formatting for the header (FR-37): "Generated 3 days ago · 812 repos".
+// Every helper takes a translator (English by default); its locale also drives
+// the Intl number and relative-time formats.
 
 const UNITS: ReadonlyArray<[Intl.RelativeTimeFormatUnit, number]> = [
   ["year", 365 * 24 * 3600],
@@ -13,21 +17,22 @@ const UNITS: ReadonlyArray<[Intl.RelativeTimeFormatUnit, number]> = [
 export function formatRelativeTime(
   iso: string,
   now: Date = new Date(),
-  locale = "en",
+  t: Translator = enT,
 ): string {
   const seconds = Math.round((Date.parse(iso) - now.getTime()) / 1000);
-  if (!Number.isFinite(seconds)) return "at an unknown time";
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  if (!Number.isFinite(seconds)) return t("time.unknown");
+  const rtf = new Intl.RelativeTimeFormat(t.locale, { numeric: "auto" });
   for (const [unit, size] of UNITS) {
     if (Math.abs(seconds) >= size)
       return rtf.format(Math.trunc(seconds / size), unit);
   }
-  return "just now";
+  return t("time.justNow");
 }
 
-export function formatRepoCount(count: number, locale = "en"): string {
-  const n = new Intl.NumberFormat(locale).format(count);
-  return `${n} ${count === 1 ? "repo" : "repos"}`;
+export function formatRepoCount(count: number, t: Translator = enT): string {
+  return t("count.repos", {
+    count: new Intl.NumberFormat(t.locale).format(count),
+  });
 }
 
 /** Header freshness line (FR-37). */
@@ -35,6 +40,10 @@ export function formatFreshness(
   generatedAt: string,
   repoCount: number,
   now?: Date,
+  t: Translator = enT,
 ): string {
-  return `Generated ${formatRelativeTime(generatedAt, now)} · ${formatRepoCount(repoCount)}`;
+  return t("freshness", {
+    time: formatRelativeTime(generatedAt, now, t),
+    repos: formatRepoCount(repoCount, t),
+  });
 }
