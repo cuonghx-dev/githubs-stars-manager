@@ -37,6 +37,7 @@ export const en = {
   "nav.views": "Views",
   "view.graph": "Graph",
   "view.clusters": "Clusters",
+  "view.top": "Top",
   "view.bridges": "Bridges",
   "view.forgotten": "Forgotten",
   "view.dupes": "Dupes",
@@ -175,6 +176,19 @@ export const en = {
   "clusters.topLanguages": "Top languages",
   "clusters.topRepos": "Top repos by stars",
 
+  // Top view
+  "top.title": "Top repos",
+  "top.rankBy": "Rank by",
+  "top.sortScore": "Combined",
+  "top.sortStars": "Stars",
+  "top.sortLinks": "Links",
+  "top.intro":
+    "Top {count} repos worth a look. Combined averages each repo's percentile on stars and on links in the similarity graph, so leaders are both popular and well connected.",
+  "top.empty": "No repos yet.",
+  "top.starsTitle": "GitHub stars",
+  "top.linksTitle": "Links to similar repos in the graph",
+  "top.scoreTitle": "Combined score (0–100)",
+
   // Bridges view
   "bridges.title": "Bridges",
   "bridges.rankBy": "Rank by",
@@ -270,6 +284,7 @@ export const vi: Messages = {
   "nav.views": "Chế độ xem",
   "view.graph": "Đồ thị",
   "view.clusters": "Cụm",
+  "view.top": "Nổi bật",
   "view.bridges": "Cầu nối",
   "view.forgotten": "Bị lãng quên",
   "view.dupes": "Trùng lặp",
@@ -399,6 +414,18 @@ export const vi: Messages = {
   "clusters.cardTitle": "Lọc theo cụm này và căn camera",
   "clusters.topLanguages": "Ngôn ngữ phổ biến",
   "clusters.topRepos": "Repo nhiều sao nhất",
+
+  "top.title": "Repo nổi bật",
+  "top.rankBy": "Xếp theo",
+  "top.sortScore": "Kết hợp",
+  "top.sortStars": "Sao",
+  "top.sortLinks": "Liên kết",
+  "top.intro":
+    "Top {count} repo đáng xem nhất. Điểm kết hợp lấy trung bình phân vị theo số sao và theo số liên kết trong đồ thị tương đồng, nên repo dẫn đầu vừa nổi tiếng vừa kết nối nhiều.",
+  "top.empty": "Chưa có repo nào.",
+  "top.starsTitle": "Số sao GitHub",
+  "top.linksTitle": "Số liên kết tới repo tương tự trong đồ thị",
+  "top.scoreTitle": "Điểm kết hợp (0–100)",
 
   "bridges.title": "Cầu nối",
   "bridges.rankBy": "Xếp theo",

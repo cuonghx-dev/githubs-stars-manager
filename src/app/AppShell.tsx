@@ -15,6 +15,7 @@ import {
   Search,
   Shapes,
   Sun,
+  Trophy,
   Waypoints,
   type LucideIcon,
 } from "lucide-react";
@@ -62,6 +63,7 @@ interface ViewItem {
 const VIEWS: readonly ViewItem[] = [
   { id: "graph", label: "view.graph", icon: Network, available: true },
   { id: "clusters", label: "view.clusters", icon: Shapes, available: true },
+  { id: "top", label: "view.top", icon: Trophy, available: true },
   { id: "bridges", label: "view.bridges", icon: Waypoints, available: true },
   { id: "forgotten", label: "view.forgotten", icon: Clock, available: true },
   { id: "dupes", label: "view.dupes", icon: Copy, available: true },

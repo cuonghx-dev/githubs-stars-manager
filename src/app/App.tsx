@@ -12,6 +12,7 @@ import { ConceptToggle } from "@/features/graph/ConceptToggle";
 import { GraphCanvas } from "@/features/graph/GraphCanvas";
 import { PathView } from "@/features/path/PathView";
 import { SearchBox } from "@/features/search/SearchBox";
+import { TopView } from "@/features/top/TopView";
 import { TimelineSlider } from "@/features/timeline/TimelineSlider";
 import { ShortcutDialog } from "@/features/shortcuts/ShortcutDialog";
 import { useKeyboardShortcuts } from "@/features/shortcuts/useKeyboardShortcuts";
@@ -151,6 +152,9 @@ function GraphView({ loaded }: { loaded: LoadedGraph }) {
       {view === "graph" && <WalkControls walk={walk} />}
       {view === "clusters" && (
         <ClusterOverview clusters={data.clusters} nodes={data.nodes} />
+      )}
+      {view === "top" && (
+        <TopView clusters={data.clusters} nodes={data.nodes} />
       )}
       {view === "bridges" && (
         <BridgesView
