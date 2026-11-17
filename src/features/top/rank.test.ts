@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rankTopRepos } from "@/features/top/rank";
+import { clampPage, pageCount, rankTopRepos } from "@/features/top/rank";
 import type { RepoNode } from "@/lib/graph-schema";
 
 function node(id: string, stars: number, degree: number): RepoNode {
@@ -37,7 +37,7 @@ const ids = (rows: { repo: RepoNode }[]) => rows.map((r) => r.repo.id);
 
 describe("rankTopRepos", () => {
   it("sorts by stars", () => {
-    expect(ids(rankTopRepos(nodes, "stars"))).toEqual([
+    expect(ids(rankTopRepos(nodes, { key: "stars", asc: false }))).toEqual([
       "a/huge-lonely",
       "c/balanced",
       "b/hub",
@@ -46,7 +46,7 @@ describe("rankTopRepos", () => {
   });
 
   it("sorts by links", () => {
-    expect(ids(rankTopRepos(nodes, "links"))).toEqual([
+    expect(ids(rankTopRepos(nodes, { key: "links", asc: false }))).toEqual([
       "b/hub",
       "c/balanced",
       "d/small",
@@ -55,22 +55,66 @@ describe("rankTopRepos", () => {
   });
 
   it("combined score favours repos high on both axes", () => {
-    const rows = rankTopRepos(nodes, "score");
+    const rows = rankTopRepos(nodes);
     expect(rows[0]?.repo.id).toBe("c/balanced");
     expect(rows[0]?.score).toBeCloseTo((2 / 3 + 2 / 3) / 2);
     expect(rows.at(-1)?.repo.id).toBe("d/small");
   });
 
-  it("gives ties the same percentile and respects the limit", () => {
-    const tied = [node("x/one", 10, 5), node("y/two", 10, 5)];
-    const rows = rankTopRepos(tied, "score", 1);
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.repo.id).toBe("x/one");
+  it("gives ties the same percentile and breaks them by id", () => {
+    const tied = [node("y/two", 10, 5), node("x/one", 10, 5)];
+    const rows = rankTopRepos(tied);
+    expect(ids(rows)).toEqual(["x/one", "y/two"]);
     expect(rows[0]?.score).toBe(0.5);
   });
 
+  it("returns every repo, not a fixed top slice", () => {
+    const many = Array.from({ length: 120 }, (_, i) => node(`o/r${i}`, i, 0));
+    expect(rankTopRepos(many)).toHaveLength(120);
+  });
+
+  it("sorts ascending when asked", () => {
+    expect(ids(rankTopRepos(nodes, { key: "stars", asc: true }))).toEqual([
+      "d/small",
+      "b/hub",
+      "c/balanced",
+      "a/huge-lonely",
+    ]);
+  });
+
+  it("sorts by name, case-insensitive", () => {
+    const named = [node("b/x", 1, 0), node("A/y", 1, 0), node("c/z", 1, 0)];
+    expect(ids(rankTopRepos(named, { key: "name", asc: true }))).toEqual([
+      "A/y",
+      "b/x",
+      "c/z",
+    ]);
+  });
+
+  it("sorts by starred date, newest first", () => {
+    const old = { ...node("o/old", 1, 0), starredAt: "2020-01-01T00:00:00Z" };
+    const fresh = { ...node("n/new", 1, 0), starredAt: "2025-06-01T00:00:00Z" };
+    expect(
+      ids(rankTopRepos([old, fresh], { key: "starred", asc: false })),
+    ).toEqual(["n/new", "o/old"]);
+  });
+
   it("handles empty and single-node graphs", () => {
-    expect(rankTopRepos([], "score")).toEqual([]);
-    expect(rankTopRepos([node("z/solo", 1, 0)], "score")[0]?.score).toBe(1);
+    expect(rankTopRepos([])).toEqual([]);
+    expect(rankTopRepos([node("z/solo", 1, 0)])[0]?.score).toBe(1);
+  });
+});
+
+describe("pagination helpers", () => {
+  it("counts pages, at least one", () => {
+    expect(pageCount(0, 50)).toBe(1);
+    expect(pageCount(50, 50)).toBe(1);
+    expect(pageCount(51, 50)).toBe(2);
+  });
+
+  it("clamps the page into range", () => {
+    expect(clampPage(-1, 120, 50)).toBe(0);
+    expect(clampPage(5, 120, 50)).toBe(2);
+    expect(clampPage(1, 120, 50)).toBe(1);
   });
 });

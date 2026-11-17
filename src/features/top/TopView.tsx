@@ -1,26 +1,41 @@
-import { Link2, Star } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Link2,
+  Star,
+} from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
+  clampPage,
+  defaultAsc,
+  pageCount,
   rankTopRepos,
-  TOP_REPOS,
+  TOP_PAGE_SIZES,
   type TopRow,
-  type TopSort,
+  type TopSortKey,
 } from "@/features/top/rank";
+import { useTopListStore } from "@/features/top/top-list-store";
 import type { Cluster, RepoNode } from "@/lib/graph-schema";
 import type { MessageKey } from "@/lib/i18n";
 import { useT } from "@/lib/i18n/use-i18n";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
-// Top view: the repos most worth a look, ranked by GitHub stars, by links in
-// the similarity graph, or by both combined (see rank.ts). Clicking a repo
-// selects it and centres the camera on it.
+// Top view: every repo, ranked by GitHub stars, by links in the similarity
+// graph, by both combined (see rank.ts), by name or by when it was starred,
+// a page at a time. Clicking a repo selects it and centres the camera on it.
 
-const SORTS: readonly { id: TopSort; label: MessageKey }[] = [
+const SORTS: readonly { id: TopSortKey; label: MessageKey }[] = [
   { id: "score", label: "top.sortScore" },
   { id: "stars", label: "top.sortStars" },
   { id: "links", label: "top.sortLinks" },
+  { id: "starred", label: "top.sortStarred" },
+  { id: "name", label: "top.sortName" },
 ];
 
 interface TopViewProps {
@@ -30,8 +45,13 @@ interface TopViewProps {
 
 export function TopView({ clusters, nodes }: TopViewProps) {
   const t = useT();
-  const [sort, setSort] = useState<TopSort>("score");
+  const { sort, page: storedPage, pageSize } = useTopListStore();
+  const { setSort, setPage, setPageSize } = useTopListStore.getState();
   const rows = useMemo(() => rankTopRepos(nodes, sort), [nodes, sort]);
+  const pages = pageCount(rows.length, pageSize);
+  const page = clampPage(storedPage, rows.length, pageSize);
+  const offset = page * pageSize;
+  const pageRows = rows.slice(offset, offset + pageSize);
   const colorOf = useMemo(
     () => new Map(clusters.map((c) => [c.id, c.color])),
     [clusters],
@@ -41,6 +61,16 @@ export function TopView({ clusters, nodes }: TopViewProps) {
     () => new Intl.NumberFormat(t.locale, { notation: "compact" }),
     [t.locale],
   );
+  const countFormat = useMemo(
+    () => new Intl.NumberFormat(t.locale),
+    [t.locale],
+  );
+
+  // Back to the top of the list whenever the visible page changes.
+  const sectionRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    sectionRef.current?.scrollTo({ top: 0 });
+  }, [page, pageSize, sort]);
 
   const showRepo = (repo: RepoNode) => {
     const { select, centerOn, setView } = useAppStore.getState();
@@ -50,8 +80,18 @@ export function TopView({ clusters, nodes }: TopViewProps) {
     requestAnimationFrame(() => centerOn(repo.id));
   };
 
+  // Clicking the active key flips its direction; a new key starts in its
+  // natural direction (text A→Z, numbers biggest first).
+  const pickSort = (key: TopSortKey) =>
+    setSort(
+      key === sort.key
+        ? { key, asc: !sort.asc }
+        : { key, asc: defaultAsc(key) },
+    );
+
   return (
     <section
+      ref={sectionRef}
       className="absolute inset-0 overflow-y-auto bg-background p-4"
       aria-labelledby="top-title"
     >
@@ -60,47 +100,134 @@ export function TopView({ clusters, nodes }: TopViewProps) {
           {t("top.title")}
         </h2>
         <div
-          className="flex items-center gap-1"
+          className="flex flex-wrap items-center gap-1"
           role="group"
           aria-label={t("top.rankBy")}
         >
           <span className="mr-1 text-sm text-muted-foreground">
             {t("top.rankBy")}
           </span>
-          {SORTS.map((s) => (
-            <Button
-              key={s.id}
-              variant={sort === s.id ? "secondary" : "ghost"}
-              size="sm"
-              aria-pressed={sort === s.id}
-              onClick={() => setSort(s.id)}
-            >
-              {t(s.label)}
-            </Button>
-          ))}
+          {SORTS.map((s) => {
+            const active = sort.key === s.id;
+            return (
+              <Button
+                key={s.id}
+                variant={active ? "secondary" : "ghost"}
+                size="sm"
+                aria-pressed={active}
+                title={
+                  active
+                    ? t(sort.asc ? "top.sortAscTitle" : "top.sortDescTitle")
+                    : undefined
+                }
+                onClick={() => pickSort(s.id)}
+              >
+                {t(s.label)}
+                {active &&
+                  (sort.asc ? (
+                    <ArrowUp aria-hidden="true" />
+                  ) : (
+                    <ArrowDown aria-hidden="true" />
+                  ))}
+              </Button>
+            );
+          })}
         </div>
       </div>
-      <p className="mb-4 text-sm text-muted-foreground">
-        {t("top.intro", { count: TOP_REPOS })}
-      </p>
+      <p className="mb-4 text-sm text-muted-foreground">{t("top.intro")}</p>
 
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("top.empty")}</p>
       ) : (
-        <ol className="flex flex-col gap-2">
-          {rows.map((row, i) => (
-            <li key={row.repo.id}>
-              <TopItem
-                rank={i + 1}
-                row={row}
-                color={colorOf.get(row.repo.cluster) ?? "#a3a3a3"}
-                format={numberFormat}
-                active={selected === row.repo.id}
-                onShow={() => showRepo(row.repo)}
-              />
-            </li>
-          ))}
-        </ol>
+        <>
+          <ol className="flex flex-col gap-2" start={offset + 1}>
+            {pageRows.map((row, i) => (
+              <li key={row.repo.id}>
+                <TopItem
+                  rank={offset + i + 1}
+                  row={row}
+                  color={colorOf.get(row.repo.cluster) ?? "#a3a3a3"}
+                  format={numberFormat}
+                  active={selected === row.repo.id}
+                  onShow={() => showRepo(row.repo)}
+                />
+              </li>
+            ))}
+          </ol>
+          <nav
+            className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground"
+            aria-label={t("top.pagination")}
+          >
+            <span className="tabular-nums">
+              {t("top.range", {
+                from: countFormat.format(offset + 1),
+                to: countFormat.format(offset + pageRows.length),
+                total: countFormat.format(rows.length),
+              })}
+            </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="flex items-center gap-1.5">
+                {t("top.pageSize")}
+                <select
+                  className="h-7 rounded-md border bg-background px-1.5 text-foreground"
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                >
+                  {TOP_PAGE_SIZES.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={page === 0}
+                  onClick={() => setPage(0)}
+                  aria-label={t("top.firstPage")}
+                  title={t("top.firstPage")}
+                >
+                  <ChevronsLeft aria-hidden="true" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={page === 0}
+                  onClick={() => setPage(page - 1)}
+                  aria-label={t("top.prevPage")}
+                  title={t("top.prevPage")}
+                >
+                  <ChevronLeft aria-hidden="true" />
+                </Button>
+                <span className="px-1 tabular-nums" aria-live="polite">
+                  {t("top.pageOf", { page: page + 1, pages })}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={page >= pages - 1}
+                  onClick={() => setPage(page + 1)}
+                  aria-label={t("top.nextPage")}
+                  title={t("top.nextPage")}
+                >
+                  <ChevronRight aria-hidden="true" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={page >= pages - 1}
+                  onClick={() => setPage(pages - 1)}
+                  aria-label={t("top.lastPage")}
+                  title={t("top.lastPage")}
+                >
+                  <ChevronsRight aria-hidden="true" />
+                </Button>
+              </div>
+            </div>
+          </nav>
+        </>
       )}
     </section>
   );
@@ -132,7 +259,7 @@ function TopItem({
       onClick={onShow}
       title={t("common.selectRepoTitle")}
     >
-      <span className="w-6 shrink-0 text-right text-sm text-muted-foreground tabular-nums">
+      <span className="w-8 shrink-0 text-right text-sm text-muted-foreground tabular-nums">
         {rank}
       </span>
       <span
